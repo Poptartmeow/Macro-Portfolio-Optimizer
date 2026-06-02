@@ -1,5 +1,5 @@
 Release date	Time	Actual	Forecast	Previous
-Jun 01, 2026 (May)	10:00			
+Jun 01, 2026 (May)	10:00	54.0	53.3
 52.7
 May 01, 2026 (Apr)	10:00	52.7	53.1	
 52.7
