@@ -1,8 +1,0 @@
-ticker,longName,category,totalAssets,trailingPE,trailingEps,yield,beta,fiftyTwoWeekHigh,fiftyTwoWeekLow,navPrice,ytdReturn
-VGK,Vanguard FTSE Europe ETF,Europe Stock,37797404672,17.664608,,0.028299998,,90.75,74.24,87.28,5.06547
-EFA,iShares MSCI EAFE ETF,Foreign Large Blend,75608719360,18.304592,,0.0317,,105.94,85.68,102.58325,6.88218
-VEA,Vanguard FTSE Developed Markets Index Fund ETF Shares,Foreign Large Blend,304263069696,18.480639,,0.0273,,71.12,54.45,69.47,10.41445
-EWC,iShares MSCI Canada ETF,Focused Region,5235920384,19.372671,,0.013300001,,58.89,43.79,57.71158,8.65658
-IEMG,iShares Core MSCI Emerging Markets ETF,Diversified Emerging Mkts,151167582208,17.561579,,0.023699999,,83.29,56.38,79.40874,15.84886
-VWO,Vanguard Emerging Markets Stock Index Fund,Diversified Emerging Mkts,159867043840,16.498943,,0.0248,,61.03,46.73,58.31,9.09769
-EEM,iShares MSCI Emerging Markets ETF,Diversified Emerging Mkts,28104833024,17.513746,,0.0191,,68.15,45.23,64.96959,15.99203
