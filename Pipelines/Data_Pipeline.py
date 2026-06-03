@@ -64,8 +64,8 @@ UNIVERSE = {
 # Splice config: BWX (proxy) → BNDX (primary) = INTL_BOND
 SPLICE = {
     "output_name": "INTL_BOND",
-    "label":       "Intl Bonds ex-US (spliced: BWX→BNDX)",
-    "proxy":       "BWX",    # used pre-splice-date
+    "label":       "Intl Bonds ex-US (spliced: PFORX→BNDX)",
+    "proxy":       "PFORX",    # used pre-splice-date
     "primary":     "BNDX",   # used post-splice-date
     "splice_date": "2013-04-01",  # BNDX inception (Apr 2013)
 }
