@@ -3,6 +3,7 @@ Global Macro Portfolio Optimizer &amp; Risk Analytics Platform
 
 ## Mauricio Torres, Tianyin Mao, Jack Joy, Tiandra Threat
 
+"""
 Column naming convention:
   REAL_GDP_<COUNTRY>        Real GDP, PPP-adjusted USD (OECD, quarterly → monthly ffill)
   HEADLINE_CPI_<COUNTRY>    Headline CPI, % change year-on-year (OECD)
@@ -16,3 +17,4 @@ Column naming convention:
   BAA10Y — Moody's Baa corporate yield minus 10yr Treasury (investment-grade spread)
   AAA10Y — Moody's Aaa minus 10yr (tighter end)
   S&P 500 dividend yield — FRED has this as a proxy (`SP500` price + `DDDM01USA156NWDB` from World Bank). US-centric but widely used as a global equity signal.
+  """
