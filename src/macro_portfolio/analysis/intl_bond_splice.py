@@ -1,9 +1,16 @@
 """
-BWX → BNDX Splice Alternatives — Correlation Analysis
-======================================================
-Tests candidate ETFs/funds as replacements for BWX in the international
-bond splice. The current BWX→BNDX splice has an overlap correlation of
-~0.48, which is driven mostly by BWX being unhedged vs BNDX USD-hedged.
+International Bond Splice — Proxy Selection Study
+=================================================
+Tests candidate ETFs/funds for the pre-2013 leg of the international bond
+splice (extending BNDX backward to 2007). BWX was the original baseline,
+but its BWX→BNDX overlap correlation is only ~0.48 — driven mostly by BWX
+being unhedged vs BNDX USD-hedged.
+
+RESULT: this study is why the data pipeline now uses PFORX (PIMCO Intl Bond
+USD-Hedged) as the proxy instead of BWX — PFORX is USD-hedged like BNDX and
+tracks it far more closely. See data_pipeline.py SPLICE config. The BWX
+references below are kept because BWX is still the baseline this study
+measures everything against.
 
 This script measures, for each candidate vs BNDX in their overlap window:
   - Correlation of monthly returns          (★ headline number)
@@ -15,9 +22,9 @@ This script measures, for each candidate vs BNDX in their overlap window:
   - Available history (start date)           (how far back can we splice?)
 
 Run:
-    python bond_splice_analysis.py
+    python -m macro_portfolio.analysis.intl_bond_splice
 
-Outputs:
+Outputs (written to outputs/):
     splice_analysis_results.csv  — full metrics table
     splice_analysis_chart.png    — cumulative return comparison
     (also prints a ranked summary to the terminal)
@@ -34,6 +41,8 @@ import yfinance as yf
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+from macro_portfolio.paths import OUTPUTS_DIR
 
 
 # ─────────────────────────────────────────────
@@ -59,8 +68,8 @@ START   = "2007-01-01"
 END     = _dt.date.today().isoformat()
 PERIODS = 12
 
-OUT_CSV   = "splice_analysis_results.csv"
-OUT_CHART = "splice_analysis_chart.png"
+OUT_CSV   = str(OUTPUTS_DIR / "splice_analysis_results.csv")
+OUT_CHART = str(OUTPUTS_DIR / "splice_analysis_chart.png")
 
 
 # ─────────────────────────────────────────────

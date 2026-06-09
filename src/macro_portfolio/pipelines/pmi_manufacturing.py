@@ -23,8 +23,8 @@ US source: ISM Manufacturing PMI (headline composite, seasonally adjusted)
        2. Scroll to the Historical Data table and click "Show More" until rows
           go back to at least 2007.
        3. Select all rows including the header row, copy.
-       4. Paste into data/raw/ISM_Manufacturing_PMI_investing_com.txt (overwrite).
-       5. Re-run this script.
+       4. Paste into data/raw/PMI_Manufacturing_US.txt (overwrite).
+       5. Re-run this script:  python -m macro_portfolio.pipelines.pmi_manufacturing
        PMI is released first business day of each month, so refresh monthly
        (only need to add the newest row, but easiest is just to re-grab full table).
 
@@ -43,15 +43,15 @@ import re
 import pandas as pd
 from datetime import datetime
 
+from macro_portfolio import paths
+
 # Config
 
 START_DATE = "2007-01-01"
 END_DATE = datetime.today().strftime("%Y-%m-%d")
 
-OUTPUT_DIR = "data"
-RAW_DIR = os.path.join(OUTPUT_DIR, "raw")
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-os.makedirs(RAW_DIR, exist_ok=True)
+OUTPUT_DIR = str(paths.DATA_DIR)   # paths.py creates these dirs on import
+RAW_DIR = str(paths.RAW_DIR)
 
 
 # US: ISM Manufacturing PMI from investing.com text dump

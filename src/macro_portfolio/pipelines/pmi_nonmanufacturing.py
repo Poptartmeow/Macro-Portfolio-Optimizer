@@ -24,15 +24,15 @@ US source: ISM Non-Manufacturing (Services) PMI — headline composite, seasonal
           go back to at least 2007.
        3. Select all rows including the header row, copy.
        4. Paste into data/raw/PMI_Non_Manufacturing_US.txt (overwrite).
-       5. Re-run this script.
+       5. Re-run this script:  python -m macro_portfolio.pipelines.pmi_nonmanufacturing
        ISM Non-Manufacturing PMI is released on the third business day of each
        month, so refresh monthly.
 
 Note on data convention: investing.com lists rows by RELEASE DATE, but ISM PMI
 released on (e.g.) June 4, 2026 describes the May 2026 reference period. This
 script extracts the reference month from the parenthetical "(May)" annotation
-and keys the output by reference month, matching the convention used in Pipeline 1
-and the rest of the team's macro data.
+and keys the output by reference month, matching the convention used in the
+manufacturing pipeline (pmi_manufacturing.py) and the rest of the team's macro data.
 
 Output column: PMI_NM_US  (Non-Manufacturing headline composite)
 
@@ -45,15 +45,15 @@ import re
 import pandas as pd
 from datetime import datetime
 
+from macro_portfolio import paths
+
 # Config
 
 START_DATE = "2007-01-01"
 END_DATE = datetime.today().strftime("%Y-%m-%d")
 
-OUTPUT_DIR = "data"
-RAW_DIR = os.path.join(OUTPUT_DIR, "raw")
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-os.makedirs(RAW_DIR, exist_ok=True)
+OUTPUT_DIR = str(paths.DATA_DIR)   # paths.py creates these dirs on import
+RAW_DIR = str(paths.RAW_DIR)
 
 
 # US: ISM Non-Manufacturing PMI from investing.com text dump

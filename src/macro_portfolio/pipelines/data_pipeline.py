@@ -1,13 +1,13 @@
 """
 Global Macro Portfolio — Data Pipeline
 =======================================
-Pulls all ETF price history from yfinance, builds the BWX→BNDX
+Pulls all ETF price history from yfinance, builds the PFORX→BNDX
 splice, computes monthly returns, and saves clean output files.
 
 Run:
-    python data_pipeline.py
+    python -m macro_portfolio.pipelines.data_pipeline
 
-Outputs (written to ./data/):
+Outputs (written to data/):
     prices_raw.csv       — raw monthly adjusted close prices
     returns_full.csv     — all returns, NaNs in early months where a series doesn't exist yet
     returns_aligned.csv  — ★ clean monthly returns, common window, no NaNs (main input to optimizer)
@@ -25,8 +25,8 @@ Asset Universe:
     DBC   — Broad Commodities                      [from 2006]
 
     Splice (International Bonds):
-    BWX   — Intl Sovereign ex-US [2007–2013]  ─┐ chain-linked
-    BNDX  — Intl Aggregate ex-US USD-hedged [2013+] ─┘ → INTL_BOND
+    PFORX — PIMCO Intl Bond USD-Hedged (active fund) [2007–2013] ─┐ chain-linked
+    BNDX  — Intl Aggregate ex-US USD-hedged (index)  [2013+]      ─┘ → INTL_BOND
 """
 
 import os
@@ -37,17 +37,19 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
+from macro_portfolio.paths import DATA_DIR
+
 # ─────────────────────────────────────────────
 # CONFIGURATION
 # ─────────────────────────────────────────────
 
 import datetime as _dt
 
-START_DATE  = "2007-01-01"   # BWX inception — earliest common start
+START_DATE  = "2007-01-01"   # earliest common start across the universe
 END_DATE    = _dt.date.today().isoformat()  # e.g. "2026-06-02" — yfinance needs a real date, not "today"
 FREQUENCY   = "ME"           # Month-end
 PERIODS     = 12             # Months per year
-OUTPUT_DIR  = "./data"
+OUTPUT_DIR  = str(DATA_DIR)
 
 # Core universe — each ETF and a human-readable label
 UNIVERSE = {
@@ -61,7 +63,7 @@ UNIVERSE = {
     "DBC":  "Broad Commodities",
 }
 
-# Splice config: BWX (proxy) → BNDX (primary) = INTL_BOND
+# Splice config: PFORX (proxy) → BNDX (primary) = INTL_BOND
 SPLICE = {
     "output_name": "INTL_BOND",
     "label":       "Intl Bonds ex-US (spliced: PFORX→BNDX)",
@@ -148,21 +150,21 @@ def fetch_prices(tickers: list, start: str, end: str, max_retries: int = 4) -> p
 
 
 # ─────────────────────────────────────────────
-# STEP 2 — BUILD BWX→BNDX SPLICE
+# STEP 2 — BUILD PFORX→BNDX SPLICE
 # ─────────────────────────────────────────────
 
 def build_splice(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, dict]:
     """
-    Chain-links BWX and BNDX into a single INTL_BOND return series.
+    Chain-links PFORX and BNDX into a single INTL_BOND return series.
 
     Method:
       - Compute monthly returns on each series independently
-      - Use BWX returns before splice_date, BNDX returns on/after
+      - Use PFORX (proxy) returns before splice_date, BNDX on/after
       - Concatenate at the return level (NOT price level)
         → avoids artificial jump at the join date
 
     Returns:
-      prices_out   : original prices with BWX/BNDX columns kept for audit
+      prices_out   : original prices with PFORX/BNDX columns kept for audit
       spliced_ret  : the chain-linked INTL_BOND return series
       splice_info  : dict with metadata for the data quality report
     """
@@ -178,36 +180,37 @@ def build_splice(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, dict]:
         )
 
     # Monthly returns on each leg
-    bwx_ret  = prices[proxy].pct_change()
-    bndx_ret = prices[primary].pct_change()
+    proxy_ret   = prices[proxy].pct_change()
+    primary_ret = prices[primary].pct_change()
 
-    # Pre-splice: BWX | Post-splice: BNDX
-    pre  = bwx_ret[bwx_ret.index  <  splice_dt]
-    post = bndx_ret[bndx_ret.index >= splice_dt]
+    # Pre-splice: PFORX (proxy) | Post-splice: BNDX (primary)
+    pre  = proxy_ret[proxy_ret.index   <  splice_dt]
+    post = primary_ret[primary_ret.index >= splice_dt]
 
     spliced = pd.concat([pre, post]).sort_index()
     spliced.name = out_name
 
-    # Overlap window for QA: last 12 months of BWX, first 12 of BNDX
-    overlap_start = splice_dt - pd.DateOffset(months=12)
-    overlap_end   = splice_dt + pd.DateOffset(months=12)
-    bwx_overlap   = bwx_ret[overlap_start:overlap_end].dropna()
-    bndx_overlap  = bndx_ret[overlap_start:overlap_end].dropna()
-    common_ol     = bwx_overlap.index.intersection(bndx_overlap.index)
+    # Overlap window for QA: last 12 months of PFORX, first 12 of BNDX
+    overlap_start  = splice_dt - pd.DateOffset(months=12)
+    overlap_end    = splice_dt + pd.DateOffset(months=12)
+    proxy_overlap   = proxy_ret[overlap_start:overlap_end].dropna()
+    primary_overlap = primary_ret[overlap_start:overlap_end].dropna()
+    common_ol       = proxy_overlap.index.intersection(primary_overlap.index)
 
     splice_info = {
         "proxy":             proxy,
         "primary":           primary,
         "splice_date":       splice_dt.date(),
-        "proxy_start":       bwx_ret.dropna().index[0].date() if bwx_ret.dropna().size > 0 else None,
-        "primary_start":     bndx_ret.dropna().index[0].date() if bndx_ret.dropna().size > 0 else None,
+        "proxy_start":       proxy_ret.dropna().index[0].date() if proxy_ret.dropna().size > 0 else None,
+        "primary_start":     primary_ret.dropna().index[0].date() if primary_ret.dropna().size > 0 else None,
         "spliced_months":    len(spliced.dropna()),
         "proxy_months_used": len(pre.dropna()),
         "primary_months_used": len(post.dropna()),
-        "overlap_corr":      float(bwx_overlap.loc[common_ol].corr(bndx_overlap.loc[common_ol]))
+        "overlap_corr":      float(proxy_overlap.loc[common_ol].corr(primary_overlap.loc[common_ol]))
                              if len(common_ol) > 2 else None,
-        "note": "BWX is NOT USD-hedged. Splice introduces FX exposure pre-2013. "
-                "Methodology note required."
+        "note": "PFORX is an actively-managed USD-hedged fund; BNDX is a passive "
+                "USD-hedged index. Both are USD-hedged (no FX mismatch at the join), "
+                "but the active/passive switch should be flagged in the methodology note."
     }
 
     print(f"\n  Splice: {proxy} → {primary} @ {splice_dt.date()}")
@@ -227,7 +230,7 @@ def build_splice(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, dict]:
 def compute_returns(prices: pd.DataFrame, spliced_ret: pd.Series) -> pd.DataFrame:
     """
     Compute monthly returns for all core assets.
-    Replaces BWX/BNDX raw columns with the spliced INTL_BOND series.
+    Replaces PFORX/BNDX raw columns with the spliced INTL_BOND series.
     """
     core_tickers = list(UNIVERSE.keys())
 
@@ -398,7 +401,7 @@ def run_pipeline():
     prices = fetch_prices(all_tickers, START_DATE, END_DATE)
 
     # 2. Splice
-    print("\n[2/6] Building BWX → BNDX splice...")
+    print("\n[2/6] Building PFORX → BNDX splice...")
     prices, spliced_ret, splice_info = build_splice(prices)
 
     # 3. Returns
@@ -431,7 +434,7 @@ def run_pipeline():
 
     print(f"\n{sep}")
     print("  PIPELINE COMPLETE")
-    print(f"  Feed  ./data/returns_aligned.csv  into the optimizer.")
+    print(f"  Feed  data/returns_aligned.csv  into the optimizer.")
     print(sep)
 
     return aligned_rets, stats

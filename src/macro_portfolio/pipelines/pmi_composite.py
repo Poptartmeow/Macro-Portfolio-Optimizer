@@ -1,10 +1,10 @@
 """
-Macro Portfolio Optimizer — PMI Pipeline 3
+Macro Portfolio Optimizer — PMI Composite Pipeline
 US ISM Composite PMI — weighted average of Manufacturing and Non-Manufacturing.
 
 This pipeline merges the outputs of:
-  - Pipeline 1 (Macro_PMI_Pipeline_1.py) → data/PMI_Manufacturing_US.csv    (column: PMI_US)
-  - Pipeline 2 (Macro_PMI_Pipeline_2.py) → data/PMI_NonManufacturing_US.csv (column: PMI_NM_US)
+  - pmi_manufacturing.py    → data/PMI_Manufacturing_US.csv    (column: PMI_US)
+  - pmi_nonmanufacturing.py → data/PMI_NonManufacturing_US.csv (column: PMI_NM_US)
 
 into a single composite series (column: PMI_Composite_US).
 
@@ -31,7 +31,8 @@ Both files contain columns:
     PMI_Composite_US  : float, weighted composite
     source            : str, one of "both" | "manufacturing_only" | "nonmanufacturing_only"
 
-Run order: always run Pipelines 1 and 2 before this one.
+Run order: always run pmi_manufacturing.py and pmi_nonmanufacturing.py before this
+one, then:  python -m macro_portfolio.pipelines.pmi_composite
 
 Requirements:
     pip install pandas
@@ -41,13 +42,14 @@ import os
 import pandas as pd
 from datetime import datetime
 
+from macro_portfolio import paths
+
 # Config
 
 START_DATE = "2007-01-01"
 END_DATE = datetime.today().strftime("%Y-%m-%d")
 
-OUTPUT_DIR = "data"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+OUTPUT_DIR = str(paths.DATA_DIR)   # paths.py creates this dir on import
 
 MFG_PATH    = os.path.join(OUTPUT_DIR, "PMI_Manufacturing_US.csv")
 NM_PATH     = os.path.join(OUTPUT_DIR, "PMI_NonManufacturing_US.csv")

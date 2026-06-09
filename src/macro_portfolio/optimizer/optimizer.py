@@ -6,10 +6,10 @@ mean-variance optimization to find the efficient frontier portfolio
 at a target volatility level.
 
 Run the data pipeline first:
-    python data_pipeline.py        ← produces ./data/returns_aligned.csv
+    python -m macro_portfolio.pipelines.data_pipeline   ← produces data/returns_aligned.csv
 
 Then run this:
-    python optimizer.py
+    python -m macro_portfolio.optimizer.optimizer
 
 Asset Universe (from portfolio allocation doc):
   SPY  — US Large Cap (S&P 500)
@@ -18,7 +18,7 @@ Asset Universe (from portfolio allocation doc):
   EFA  — Developed Intl Equities (ex-US)
   VWO  — Emerging Market Equities
   AGG  — US Aggregate Bonds
-  INTL_BOND — Intl Bonds ex-US (spliced: BWX pre-2013 → BNDX from 2013)
+  INTL_BOND — Intl Bonds ex-US (spliced: PFORX pre-2013 → BNDX from 2013)
   EMB  — Emerging Market Bonds
   DBC  — Broad Commodities
 
@@ -39,6 +39,8 @@ import pandas as pd
 from scipy.optimize import minimize
 from typing import Optional
 
+from macro_portfolio.paths import DATA_DIR
+
 
 # ─────────────────────────────────────────────
 # 1. CONFIGURATION
@@ -54,7 +56,7 @@ ASSET_LABELS = {
     "EFA":       "Intl Developed Equities (ex-US)",
     "VWO":       "Emerging Market Equities",
     "AGG":       "US Aggregate Bonds",
-    "INTL_BOND": "Intl Bonds ex-US (spliced BWX→BNDX)",
+    "INTL_BOND": "Intl Bonds ex-US (spliced PFORX→BNDX)",
     "EMB":       "Emerging Market Bonds",
     "DBC":       "Broad Commodities",
 }
@@ -76,7 +78,7 @@ MAX_WEIGHT = 0.30          # 30% cap per asset
 # 2. DATA LAYER — reads from data_pipeline.py output
 # ─────────────────────────────────────────────
 
-RETURNS_PATH = "/Users/jackjoy/Macro-Portfolio-Optimizer/data/returns_aligned.csv"   # produced by data_pipeline.py
+RETURNS_PATH = str(DATA_DIR / "returns_aligned.csv")   # produced by data_pipeline.py
 
 def load_returns(path: str = RETURNS_PATH) -> pd.DataFrame:
     """
@@ -90,7 +92,7 @@ def load_returns(path: str = RETURNS_PATH) -> pd.DataFrame:
         raise FileNotFoundError(
             f"\n  ✗ Returns file not found: {path}\n"
             f"  Run the data pipeline first:\n"
-            f"      python data_pipeline.py\n"
+            f"      python -m macro_portfolio.pipelines.data_pipeline\n"
         )
 
     returns = pd.read_csv(path, index_col=0, parse_dates=True)

@@ -1,0 +1,8 @@
+# Runtime dependencies for the Macro Portfolio Optimizer.
+# Install with:  pip install -r requirements.txt
+# (or, for an editable package install:  pip install -e .)
+pandas>=2.0
+numpy>=1.24
+scipy>=1.10
+yfinance>=0.2.40
+matplotlib>=3.7

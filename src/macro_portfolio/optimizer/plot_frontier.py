@@ -9,10 +9,10 @@ The gap between the two curves at the 10% target volatility is the
 not letting the portfolio concentrate into 2–3 assets.
 
 Run the data pipeline + have returns_aligned.csv first, then:
-    python plot_frontier.py
+    python -m macro_portfolio.optimizer.plot_frontier
 
 Output:
-    data/efficient_frontier.png
+    outputs/efficient_frontier.png
 
 Note: This uses the SAME historical-mean placeholder returns as the
 optimizer. Once the macro model is wired in, the frontier shape will
@@ -27,14 +27,15 @@ import matplotlib
 matplotlib.use("Agg")  # headless / no display needed
 import matplotlib.pyplot as plt
 
-import Optimizer as O
+from macro_portfolio.optimizer import optimizer as O
+from macro_portfolio.paths import OUTPUTS_DIR
 
 
 # ─────────────────────────────────────────────
 # Styling
 # ─────────────────────────────────────────────
 
-OUTPUT_PATH = "/Users/jackjoy/Macro-Portfolio-Optimizer/Optimizer/efficient_frontier.png"
+OUTPUT_PATH = str(OUTPUTS_DIR / "efficient_frontier.png")
 
 COLOR_CONSTRAINED   = "#2563eb"   # blue  — the box-constrained frontier (what we use)
 COLOR_UNCONSTRAINED = "#9ca3af"   # gray  — the theoretical unconstrained frontier
