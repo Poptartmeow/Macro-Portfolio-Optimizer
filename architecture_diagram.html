@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Macro Portfolio Optimizer — Database Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f8f9fa; font-family: Arial, sans-serif; padding: 24px; }
+  h1 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .subtitle { font-size: 12px; color: #666; margin-bottom: 20px; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+
+  .diagram-wrap { overflow: auto; }
+  svg { display: block; }
+
+  /* Table cards */
+  .tbl-header { font-weight: 700; font-size: 12px; }
+  .tbl-col { font-size: 10.5px; }
+  .col-pk { fill: #cc0000; font-weight: 700; }
+  .col-fk { fill: #0033cc; font-weight: 700; }
+  .col-normal { fill: #222; }
+  .col-type { fill: #888; font-style: italic; }
+
+  .layer-label { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<h1>Macro Portfolio Optimizer — Database Architecture (ERD)</h1>
+<p class="subtitle">Medallion Architecture · Second Normal Form · All relationships shown · PK = red · FK = blue</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#8B4513"></div>BRONZE — Raw</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#708090"></div>SILVER — Clean</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#B8860B"></div>GOLD — Analysis</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4B0082"></div>DIM — Reference</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#cc0000; border-radius:50%"></div>PK (Primary Key)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#0033cc; border-radius:50%"></div>FK (Foreign Key)</div>
+  <div class="legend-item" style="gap:10px"><svg width="40" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#888" stroke-width="1.5" stroke-dasharray="4,3"/><polygon points="30,3 40,6 30,9" fill="#888"/></svg>Data flow</div>
+  <div class="legend-item" style="gap:10px"><svg width="40" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#0033cc" stroke-width="1.5"/><polygon points="30,3 40,6 30,9" fill="#0033cc"/></svg>FK relationship</div>
+</div>
+
+<div class="diagram-wrap">
+<svg id="erd" xmlns="http://www.w3.org/2000/svg" width="1420" height="2100"></svg>
+</div>
+
+<script>
+const svg = document.getElementById('erd');
+const ns = 'http://www.w3.org/2000/svg';
+
+function el(tag, attrs={}, text='') {
+  const e = document.createElementNS(ns, tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text) e.textContent = text;
+  return e;
+}
+
+// Colors
+const C = {
+  bronze: '#8B4513', bronzeBg: '#FDF0E0', bronzeBorder: '#C4854A',
+  silver: '#708090', silverBg: '#EEF3F8', silverBorder: '#A0B0C0',
+  gold:   '#B8860B', goldBg:   '#FFFBE6', goldBorder:   '#D4A820',
+  dim:    '#4B0082', dimBg:    '#F3EEF9', dimBorder:    '#8060B0',
+  pk: '#CC0000', fk: '#0033CC',
+  flow: '#999', flowArrow: '#888',
+  hdr: '#FFFFFF', rowAlt: '#FAFAFA',
+};
+
+const ROW_H = 18;
+const HDR_H = 26;
+const PAD = 10;
+const W = 240;
+
+// colDefs: [name, type, tag]  tag: 'pk'|'fk'|''
+const tables = {
+  bronze_prices_raw: {
+    color: C.bronze, bg: C.bronzeBg, border: C.bronzeBorder,
+    cols: [
+      ['date','DATE','pk'],
+      ['SPY','FLOAT',''],['VXF','FLOAT',''],['EWC','FLOAT',''],
+      ['EFA','FLOAT',''],['VWO','FLOAT',''],['AGG','FLOAT',''],
+      ['EMB','FLOAT',''],['DBC','FLOAT',''],
+      ['BWX','FLOAT',''],['BNDX','FLOAT',''],
+    ]
+  },
+  bronze_pmi_manufacturing: {
+    color: C.bronze, bg: C.bronzeBg, border: C.bronzeBorder,
+    cols: [['date','DATE','pk'],['PMI_US','FLOAT','']]
+  },
+  bronze_pmi_nonmanufacturing: {
+    color: C.bronze, bg: C.bronzeBg, border: C.bronzeBorder,
+    cols: [['date','DATE','pk'],['PMI_NM_US','FLOAT','']]
+  },
+  bronze_us_macro_daily: {
+    color: C.bronze, bg: C.bronzeBg, border: C.bronzeBorder,
+    cols: [
+      ['date','DATE','pk'],['month','VARCHAR',''],
+      ['HEADLINE_CPI_USA','FLOAT',''],['CORE_CPI_USA','FLOAT',''],
+      ['IR3TIB_USA','FLOAT',''],['IRLT_USA','FLOAT',''],
+      ['IRSTCI_USA','FLOAT',''],['DGS2_USA','FLOAT',''],
+      ['DIV_YIELD_USA','FLOAT',''],
+      ['CREDIT_SPREAD_BAA_USA','FLOAT',''],['CREDIT_SPREAD_AAA_USA','FLOAT',''],
+      ['SPREAD_10Y3M_USA','FLOAT',''],['SPREAD_10Y2Y_USA','FLOAT',''],
+      ['SPREAD_BAA_AAA_USA','FLOAT',''],
+    ]
+  },
+
+  dim_asset: {
+    color: C.dim, bg: C.dimBg, border: C.dimBorder,
+    cols: [
+      ['ticker','VARCHAR','pk'],
+      ['label','VARCHAR',''],
+      ['asset_class','VARCHAR',''],
+      ['region','VARCHAR',''],
+      ['inception_date','DATE',''],
+      ['is_spliced','BOOLEAN',''],
+    ]
+  },
+  dim_splice_candidates: {
+    color: C.dim, bg: C.dimBg, border: C.dimBorder,
+    cols: [
+      ['ticker','VARCHAR','pk'],
+      ['description','VARCHAR',''],
+      ['start_date','DATE',''],
+      ['overlap_months','INT',''],
+      ['correlation','FLOAT',''],
+      ['r_squared','FLOAT',''],
+      ['beta','FLOAT',''],
+      ['tracking_err_ann','FLOAT',''],
+      ['mean_diff_ann','FLOAT',''],
+      ['vol_ratio','FLOAT',''],
+      ['selected','BOOLEAN',''],
+    ]
+  },
+
+  silver_prices: {
+    color: C.silver, bg: C.silverBg, border: C.silverBorder,
+    cols: [
+      ['date','DATE','pk'],
+      ['ticker','VARCHAR','pk+fk → dim_asset'],
+      ['adj_close','FLOAT',''],
+      ['is_spliced','BOOLEAN',''],
+    ]
+  },
+  silver_pmi_composite: {
+    color: C.silver, bg: C.silverBg, border: C.silverBorder,
+    cols: [
+      ['date','DATE','pk'],
+      ['PMI_US','FLOAT',''],
+      ['PMI_NM_US','FLOAT',''],
+      ['PMI_Composite_US','FLOAT',''],
+      ['source','VARCHAR',''],
+    ]
+  },
+  silver_returns_full: {
+    color: C.silver, bg: C.silverBg, border: C.silverBorder,
+    cols: [
+      ['date','DATE','pk'],
+      ['ticker','VARCHAR','pk+fk → dim_asset'],
+      ['monthly_return','FLOAT',''],
+    ]
+  },
+  silver_data_quality: {
+    color: C.silver, bg: C.silverBg, border: C.silverBorder,
+    cols: [
+      ['ticker','VARCHAR','pk+fk → dim_asset'],
+      ['first_month','DATE',''],
+      ['last_month','DATE',''],
+      ['total_months','INT',''],
+      ['missing_months','INT',''],
+      ['interior_gaps','INT',''],
+      ['status_ok','BOOLEAN',''],
+      ['splice_note','TEXT',''],
+    ]
+  },
+  silver_us_macro_monthly: {
+    color: C.silver, bg: C.silverBg, border: C.silverBorder,
+    cols: [
+      ['date','DATE','pk'],
+      ['HEADLINE_CPI_USA','FLOAT',''],['CORE_CPI_USA','FLOAT',''],
+      ['IR3TIB_USA','FLOAT',''],['IRLT_USA','FLOAT',''],
+      ['IRSTCI_USA','FLOAT',''],['DGS2_USA','FLOAT',''],
+      ['DIV_YIELD_USA','FLOAT',''],
+      ['CREDIT_SPREAD_BAA_USA','FLOAT',''],['CREDIT_SPREAD_AAA_USA','FLOAT',''],
+      ['SPREAD_10Y3M_USA','FLOAT',''],['SPREAD_10Y2Y_USA','FLOAT',''],
+      ['SPREAD_BAA_AAA_USA','FLOAT',''],
+      ['coverage_note','VARCHAR','⚠ 2013-2018 partial'],
+    ]
+  },
+
+  gold_returns_aligned: {
+    color: C.gold, bg: C.goldBg, border: C.goldBorder,
+    cols: [
+      ['date','DATE','pk'],
+      ['ticker','VARCHAR','pk+fk → dim_asset'],
+      ['monthly_return','FLOAT',''],
+      ['window_start','DATE',''],
+      ['window_end','DATE',''],
+    ]
+  },
+  gold_summary_stats: {
+    color: C.gold, bg: C.goldBg, border: C.goldBorder,
+    cols: [
+      ['ticker','VARCHAR','pk+fk → dim_asset'],
+      ['label','VARCHAR',''],
+      ['ann_return','FLOAT',''],
+      ['ann_vol','FLOAT',''],
+      ['sharpe_ratio','FLOAT',''],
+      ['observations','INT',''],
+      ['start_date','DATE',''],
+      ['end_date','DATE',''],
+    ]
+  },
+};
+
+// Layout positions [x, y]
+const pos = {
+  // Bronze column x=20
+  bronze_prices_raw:           [20,  180],
+  bronze_pmi_manufacturing:    [20,  580],
+  bronze_pmi_nonmanufacturing: [20,  660],
+  bronze_us_macro_daily:       [20,  760],
+
+  // Dim column x=295
+  dim_asset:               [295, 180],
+  dim_splice_candidates:   [295, 460],
+
+  // Silver column x=580
+  silver_prices:           [580, 180],
+  silver_pmi_composite:    [580, 580],
+  silver_returns_full:     [580, 760],
+  silver_data_quality:     [580, 920],
+  silver_us_macro_monthly: [580, 1130],
+
+  // Gold column x=885
+  gold_returns_aligned:    [885, 180],
+  gold_summary_stats:      [885, 480],
+};
+
+// Compute table height
+function tableHeight(name) {
+  return HDR_H + tables[name].cols.length * ROW_H + 4;
+}
+
+// Draw a table card
+function drawTable(name, x, y) {
+  const t = tables[name];
+  const h = tableHeight(name);
+  const g = el('g');
+
+  // Shadow
+  const shadow = el('rect', {x: x+3, y: y+3, width: W, height: h, rx: 5, fill: '#0002'});
+  g.appendChild(shadow);
+
+  // Background
+  const bg = el('rect', {x, y, width: W, height: h, rx: 5, fill: t.bg, stroke: t.border, 'stroke-width': 1.5});
+  g.appendChild(bg);
+
+  // Header
+  const hdr = el('rect', {x, y, width: W, height: HDR_H, rx: 5, fill: t.color});
+  g.appendChild(hdr);
+  // Round bottom corners of header visually
+  const hdrFill = el('rect', {x, y: y+HDR_H-8, width: W, height: 8, fill: t.color});
+  g.appendChild(hdrFill);
+
+  // Header text
+  const htxt = el('text', {x: x+PAD, y: y+17, fill: '#fff', 'font-size': '11', 'font-weight': '700', 'font-family': 'Arial'});
+  htxt.textContent = name;
+  g.appendChild(htxt);
+
+  // Column rows
+  t.cols.forEach(([col, type, tag], i) => {
+    const ry = y + HDR_H + i * ROW_H + 2;
+    if (i % 2 === 1) {
+      const altBg = el('rect', {x: x+1, y: ry, width: W-2, height: ROW_H, fill: C.rowAlt});
+      g.appendChild(altBg);
+    }
+
+    // Indicator dot
+    if (tag.includes('pk')) {
+      const dot = el('circle', {cx: x+9, cy: ry+9, r: 4, fill: C.pk});
+      g.appendChild(dot);
+    }
+    if (tag.includes('fk')) {
+      const dot2 = el('circle', {cx: x + (tag.includes('pk') ? 19 : 9), cy: ry+9, r: 4, fill: C.fk, stroke: '#fff', 'stroke-width': '0.5'});
+      g.appendChild(dot2);
+    }
+
+    // Column name
+    const nameX = x + (tag.includes('pk') && tag.includes('fk') ? 28 : tag ? 18 : 10);
+    const nameColor = tag.includes('pk') ? C.pk : tag.includes('fk') ? C.fk : '#222';
+    const nameW = tag.includes('pk') && tag.includes('fk') ? 28 : tag ? 18 : 10;
+
+    const ntxt = el('text', {x: nameX, y: ry+13, fill: nameColor, 'font-size': '10', 'font-family': 'Arial', 'font-weight': tag ? '700' : '400'});
+    ntxt.textContent = col;
+    g.appendChild(ntxt);
+
+    // Type (right-aligned)
+    const ttxt = el('text', {x: x+W-8, y: ry+13, fill: '#999', 'font-size': '9.5', 'font-family': 'Arial', 'text-anchor': 'end', 'font-style': 'italic'});
+    ttxt.textContent = type;
+    g.appendChild(ttxt);
+
+    // Separator line
+    if (i < t.cols.length - 1) {
+      const sep = el('line', {x1: x+1, y1: ry+ROW_H, x2: x+W-1, y2: ry+ROW_H, stroke: '#e0e0e0', 'stroke-width': '0.5'});
+      g.appendChild(sep);
+    }
+  });
+
+  // Border rect on top (to cover shadow artifacts)
+  const brd = el('rect', {x, y, width: W, height: h, rx: 5, fill: 'none', stroke: t.border, 'stroke-width': 1.5});
+  g.appendChild(brd);
+
+  svg.appendChild(g);
+  return {x, y, w: W, h};
+}
+
+// Draw arrow between two points
+function arrow(x1,y1,x2,y2,color,dash,label='') {
+  const g = el('g');
+  const d = el('defs');
+  const mid = `arr_${Math.round(x1)}_${Math.round(y1)}_${Math.round(x2)}_${Math.round(y2)}`;
+  const mrkr = el('marker', {id: mid, markerWidth:'8', markerHeight:'6', refX:'7', refY:'3', orient:'auto'});
+  const poly = el('polygon', {points:'0 0, 8 3, 0 6', fill: color});
+  mrkr.appendChild(poly);
+  d.appendChild(mrkr);
+  g.appendChild(d);
+
+  const line = el('path', {
+    d: `M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}`,
+    fill: 'none', stroke: color, 'stroke-width': '1.5',
+    ...(dash ? {'stroke-dasharray': '5,4'} : {}),
+    'marker-end': `url(#${mid})`
+  });
+  g.appendChild(line);
+
+  if (label) {
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    const bg = el('rect', {x: mx-20, y: my-8, width: 40, height: 14, fill: '#fff', opacity:'0.85', rx:'2'});
+    g.appendChild(bg);
+    const lt = el('text', {x: mx, y: my+3, 'text-anchor':'middle', fill: color, 'font-size':'9', 'font-family':'Arial', 'font-weight':'600'});
+    lt.textContent = label;
+    g.appendChild(lt);
+  }
+  svg.insertBefore(g, svg.firstChild);
+}
+
+// Layer background bands
+function layerBand(x, y, w, h, color, label) {
+  const g = el('g');
+  const r = el('rect', {x, y, width: w, height: h, rx: 8, fill: color, opacity: '0.07', stroke: color, 'stroke-width': '1', 'stroke-opacity': '0.2'});
+  g.appendChild(r);
+  const t = el('text', {x: x+w/2, y: y+18, 'text-anchor': 'middle', fill: color, 'font-size': '13', 'font-weight': '700', 'font-family': 'Arial', opacity:'0.6', 'letter-spacing':'2'});
+  t.textContent = label;
+  g.appendChild(t);
+  svg.appendChild(g);
+}
+
+// Draw everything
+// Background layer bands
+layerBand(10, 30, 265, 2020, C.bronze, '● BRONZE');
+layerBand(280, 30, 265, 2020, C.dim, '● DIM');
+layerBand(570, 30, 265, 2020, C.silver, '● SILVER');
+layerBand(870, 30, 270, 2020, C.gold, '● GOLD');
+
+// Draw all tables
+const drawn = {};
+for (const [name, _] of Object.entries(pos)) {
+  const [x, y] = pos[name];
+  drawn[name] = drawTable(name, x, y);
+}
+
+// Helper: get right edge center, left edge center, bottom center of a table
+function rc(name) {
+  const {x,y,h} = drawn[name];
+  return {
+    right:  {x: x+W,     y: y+HDR_H/2},
+    left:   {x: x,       y: y+HDR_H/2},
+    bottom: {x: x+W/2,   y: y+h},
+    top:    {x: x+W/2,   y: y},
+    rightMid: {x: x+W,   y: y+h/2},
+    leftMid:  {x: x,     y: y+h/2},
+  };
+}
+
+// ── DATA FLOW arrows (dashed, gray) ──────────────────────────
+// bronze_prices_raw → silver_prices
+let a = rc('bronze_prices_raw'), b = rc('silver_prices');
+arrow(a.right.x, a.right.y, b.left.x, b.left.y, C.flow, true, 'feed');
+
+// bronze_prices_raw → silver_returns_full (via prices)
+a = rc('silver_prices'); b = rc('silver_returns_full');
+arrow(a.bottom.x-20, a.bottom.y, b.top.x-20, b.top.y, C.flow, true, 'derive');
+
+// bronze_pmi_manufacturing → silver_pmi_composite
+a = rc('bronze_pmi_manufacturing'); b = rc('silver_pmi_composite');
+arrow(a.right.x, a.right.y, b.left.x, b.left.y+10, C.flow, true, 'merge');
+
+// bronze_pmi_nonmanufacturing → silver_pmi_composite
+a = rc('bronze_pmi_nonmanufacturing'); b = rc('silver_pmi_composite');
+arrow(a.right.x, a.right.y, b.left.x, b.left.y-10, C.flow, true);
+
+// bronze_us_macro_daily → silver_us_macro_monthly
+a = rc('bronze_us_macro_daily'); b = rc('silver_us_macro_monthly');
+arrow(a.right.x, a.right.y, b.left.x, b.left.y, C.flow, true, 'aggregate');
+
+// silver_returns_full → gold_returns_aligned
+a = rc('silver_returns_full'); b = rc('gold_returns_aligned');
+arrow(a.right.x, a.right.y+20, b.left.x, b.left.y+20, C.flow, true, 'align');
+
+// silver_returns_full → gold_summary_stats
+a = rc('silver_returns_full'); b = rc('gold_summary_stats');
+arrow(a.right.x, a.rightMid.y, b.left.x, b.left.y, C.flow, true, 'aggregate');
+
+// silver_data_quality (quality check of silver_prices)
+a = rc('silver_prices'); b = rc('silver_data_quality');
+arrow(a.bottom.x+20, a.bottom.y, b.top.x+20, b.top.y, C.flow, true, 'audit');
+
+// ── FK arrows (solid, blue) ───────────────────────────────────
+// dim_asset → silver_prices
+a = rc('dim_asset'); b = rc('silver_prices');
+arrow(a.right.x, a.right.y+8, b.left.x, b.left.y+8, C.fk, false, 'FK');
+
+// dim_asset → silver_returns_full
+a = rc('dim_asset'); b = rc('silver_returns_full');
+arrow(a.rightMid.x, a.rightMid.y, b.leftMid.x, b.leftMid.y, C.fk, false, 'FK');
+
+// dim_asset → silver_data_quality
+a = rc('dim_asset'); b = rc('silver_data_quality');
+arrow(a.right.x, a.right.y-8, b.left.x, b.left.y-8, C.fk, false, 'FK');
+
+// dim_asset → gold_returns_aligned
+a = rc('dim_asset'); b = rc('gold_returns_aligned');
+arrow(a.right.x, a.right.y-8, b.left.x, b.left.y-8, C.fk, false, 'FK');
+
+// dim_asset → gold_summary_stats
+a = rc('dim_asset'); b = rc('gold_summary_stats');
+arrow(a.right.x, a.right.y+8, b.left.x, b.left.y+8, C.fk, false, 'FK');
+
+// Resize SVG to content
+svg.setAttribute('height', '2060');
+</script>
+</body>
+</html>
