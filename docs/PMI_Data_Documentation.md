@@ -83,7 +83,8 @@ For older rows where the parenthetical is missing, the pipeline infers the refer
 Three pipelines process the raw data into clean CSVs for the optimizer.
 
 ### Pipeline 1 — Manufacturing PMI
-**File:** `Pipelines/Macro_PMI_Pipeline_1.py`  
+**File:** `src/macro_portfolio/pipelines/pmi_manufacturing.py`  
+**Run:** `python -m macro_portfolio.pipelines.pmi_manufacturing`  
 **Input:** `data/raw/PMI_Manufacturing_US.txt`  
 **Outputs:**
 - `data/PMI_Manufacturing_US.csv` — windowed to project start date (2007-01-01), fed into optimizer
@@ -92,7 +93,8 @@ Three pipelines process the raw data into clean CSVs for the optimizer.
 **Output column:** `PMI_US`
 
 ### Pipeline 2 — Non-Manufacturing (Services) PMI
-**File:** `Pipelines/Macro_PMI_Pipeline_2.py`  
+**File:** `src/macro_portfolio/pipelines/pmi_nonmanufacturing.py`  
+**Run:** `python -m macro_portfolio.pipelines.pmi_nonmanufacturing`  
 **Input:** `data/raw/PMI_Non_Manufacturing_US.txt`  
 **Outputs:**
 - `data/PMI_NonManufacturing_US.csv` — windowed series
@@ -101,7 +103,8 @@ Three pipelines process the raw data into clean CSVs for the optimizer.
 **Output column:** `PMI_NM_US`
 
 ### Pipeline 3 — Composite PMI
-**File:** `Pipelines/Macro_PMI_Pipeline_3.py`  
+**File:** `src/macro_portfolio/pipelines/pmi_composite.py`  
+**Run:** `python -m macro_portfolio.pipelines.pmi_composite`  
 **Inputs:** Outputs of Pipelines 1 and 2 (must run those first)  
 **Outputs:**
 - `data/PMI_Composite_US.csv` — windowed composite, fed into optimizer
@@ -132,9 +135,9 @@ If one series is missing for a given month (e.g. the manufacturing release hasn'
 Always run in sequence:
 
 ```
-python Pipelines/Macro_PMI_Pipeline_1.py
-python Pipelines/Macro_PMI_Pipeline_2.py
-python Pipelines/Macro_PMI_Pipeline_3.py
+python -m macro_portfolio.pipelines.pmi_manufacturing
+python -m macro_portfolio.pipelines.pmi_nonmanufacturing
+python -m macro_portfolio.pipelines.pmi_composite
 ```
 
 Pipeline 3 reads the CSVs produced by 1 and 2, so running it first will error.
