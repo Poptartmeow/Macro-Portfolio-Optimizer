@@ -222,3 +222,6 @@ __marimo__/
 
 # Editable install metadata
 src/*.egg-info/
+
+# Private meeting notes / drive exports — never commit
+drive-download-*/
