@@ -4,8 +4,14 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+
+# ensure dashboard/ is importable whether launched via Home.py or alone
+_DASH = str(Path(__file__).resolve().parent.parent)
+if _DASH not in sys.path:
+    sys.path.insert(0, _DASH)
 
 import data_access as da
 import theme
@@ -130,3 +136,47 @@ with right:
     st.plotly_chart(theme.style_fig(sfig, height=380), width='stretch')
     st.caption("Step-shaped = the box forces near-binary floor/cap bets, so the "
                "macro signal gets flattened. Smoother is better (→ Black-Litterman).")
+
+# ── vs 60/40 ACWI/IGOV benchmark ──
+st.write("")
+st.subheader("Optimized portfolio vs 60/40 ACWI/IGOV benchmark")
+bench = da.load_benchmark()
+if bench is None:
+    st.info("Benchmark not fetched yet. Run:  "
+            "`python -m macro_portfolio.pipelines.benchmark`")
+else:
+    wv = w.reindex(rets.columns).fillna(0.0)
+    port = (rets * wv).sum(axis=1).rename("Optimized")
+    b = bench["BENCH_60_40"].rename("Benchmark 60/40")
+    df = pd.concat([port, b], axis=1).dropna()
+    cum = (1 + df).cumprod()
+
+    bl, br = st.columns([3, 2])
+    with bl:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=cum.index, y=cum["Optimized"], name="Optimized",
+                                 line=dict(color=theme.ROTUNDA_ORANGE, width=3)))
+        fig.add_trace(go.Scatter(x=cum.index, y=cum["Benchmark 60/40"],
+                                 name="Benchmark 60/40",
+                                 line=dict(color=theme.CYAN, width=2.5, dash="dot")))
+        fig.update_layout(yaxis_title="Growth of $1", hovermode="x unified")
+        st.plotly_chart(theme.style_fig(fig, height=360), width='stretch')
+    with br:
+        ann = df.mean() * 12
+        vol = df.std() * np.sqrt(12)
+        comp = pd.DataFrame({"Ann. Return": ann, "Ann. Vol": vol,
+                             "Sharpe": ann / vol})
+        st.dataframe(comp.style.format({"Ann. Return": "{:.2%}",
+                                        "Ann. Vol": "{:.2%}", "Sharpe": "{:.2f}"}),
+                     width='stretch')
+        excess = (ann["Optimized"] - ann["Benchmark 60/40"]) * 100
+        st.markdown(
+            f"<div class='glass'>Optimized vs benchmark: "
+            f"<b>{excess:+.2f}%</b>/yr return, Sharpe "
+            f"<b>{ann['Optimized']/vol['Optimized']:.2f}</b> vs "
+            f"<b>{ann['Benchmark 60/40']/vol['Benchmark 60/40']:.2f}</b>."
+            f"<br><span style='color:#9AA5B8'>In-sample, static weights, "
+            f"{cum.index.min().year}–{cum.index.max().year} overlap.</span></div>",
+            unsafe_allow_html=True)
+    st.caption("Current weights applied across history vs the passive 60/40. "
+               "A proper train/test backtest is the next build.")

@@ -33,6 +33,15 @@ def load_returns() -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
+def load_benchmark() -> pd.DataFrame | None:
+    """60/40 ACWI/IGOV monthly returns (or None if not fetched yet)."""
+    p = DATA_DIR / "benchmark_returns.csv"
+    if not p.exists():
+        return None
+    return pd.read_csv(p, index_col=0, parse_dates=True)
+
+
+@st.cache_data(show_spinner=False)
 def load_factors() -> pd.DataFrame:
     """Monthly macro factors (cleaned US macro panel + composite PMI)."""
     curated = DATA_DIR / "curated" / "macro_monthly.csv"
