@@ -1,0 +1,14 @@
+column,missing_pct,action,n_filled
+HY_SPREAD_USA,84.9,DROPPED (too sparse to reconstruct),0
+DIV_YIELD_USA,27.6,"time-interpolated interior, ffill/bfill edges",64
+HEADLINE_CPI_USA,0.4,time-interpolated interior,1
+IR3TIB_USA,0.4,time-interpolated interior,1
+CORE_CPI_USA,0.4,time-interpolated interior,1
+SPREAD_10Y3M_USA,0.4,time-interpolated interior,1
+IRLT_USA,0.0,clean (deduped only),0
+IRSTCI_USA,0.0,clean (deduped only),0
+DGS2_USA,0.0,clean (deduped only),0
+CREDIT_SPREAD_BAA_USA,0.0,clean (deduped only),0
+CREDIT_SPREAD_AAA_USA,0.0,clean (deduped only),0
+SPREAD_10Y2Y_USA,0.0,clean (deduped only),0
+SPREAD_BAA_AAA_USA,0.0,clean (deduped only),0
