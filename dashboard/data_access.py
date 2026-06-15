@@ -33,6 +33,13 @@ def load_returns() -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
+def load_regime() -> pd.DataFrame:
+    """Monthly macro regime labels (Expansion/Slowdown/Contraction/Recovery)."""
+    from macro_portfolio.research import regime as R
+    return R.classify(load_factors())
+
+
+@st.cache_data(show_spinner=False)
 def load_benchmark() -> pd.DataFrame | None:
     """60/40 ACWI/IGOV monthly returns (or None if not fetched yet)."""
     p = DATA_DIR / "benchmark_returns.csv"
