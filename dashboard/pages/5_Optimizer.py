@@ -27,9 +27,9 @@ from macro_portfolio.risk.covariance import (                  # noqa: E402
 
 st.markdown("# Optimizer")
 st.markdown(theme.flow_diagram(active="Optimizer"), unsafe_allow_html=True)
-st.caption("Compare the baseline against the diversification-aware model, and "
-           "see how the box constraints flatten the expected-return signal. "
-           "Expected returns = historical mean (macro model swaps in next).")
+st.caption("Tune a single optimizer and see how the box constraints flatten the "
+           "expected-return signal. Expected returns = historical mean (macro model "
+           "swaps in next). To compare all methods at once, see **Methods & Ensemble**.")
 
 EQUITY = ["SPY", "VXF", "EWC", "EFA", "VWO"]
 rets = da.load_returns()
