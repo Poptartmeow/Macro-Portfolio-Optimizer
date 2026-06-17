@@ -1,4 +1,4 @@
-"""Macro — regime + signals, as sub-tabs."""
+"""Macro, regime + signals, as sub-tabs."""
 
 import sys
 from pathlib import Path
@@ -18,7 +18,7 @@ theme.apply_theme()
 
 st.markdown("# Macro")
 st.markdown(theme.flow_diagram(active="Macro"), unsafe_allow_html=True)
-st.caption("The macro inputs to the model — what regime we're in, and which macro "
+st.caption("The macro inputs to the model, what regime we're in, and which macro "
            "signals actually move each asset.")
 
 tab_regime, tab_signals = st.tabs(["Regime", "Signals"])

@@ -1,8 +1,8 @@
 # Investment Policy Statement (IPS)
 
 This is our governing document. We (the humans) set the objectives and the limits
-here; everything downstream — the optimizer, the method ensemble, the risk
-report — has to operate inside these bounds. It's the same idea institutions use
+here; everything downstream, the optimizer, the method ensemble, the risk
+report, has to operate inside these bounds. It's the same idea institutions use
 to constrain a portfolio manager, and the same idea the Ang et al. (2026) paper
 uses to govern an agentic pipeline: write the rules once, check every portfolio
 against them. The machine-readable version lives in
@@ -20,7 +20,7 @@ than a balanced investor would tolerate.
 - **Horizon:** long-term strategic allocation (pending final confirmation with Greg).
 
 ## 2. Investment universe
-Nine liquid ETFs across four asset classes (top-down macro exposures — we don't
+Nine liquid ETFs across four asset classes (top-down macro exposures, we don't
 pick individual companies):
 
 | Class | Holdings |
@@ -46,7 +46,7 @@ pick individual companies):
 
 ## 6. Notes & open items
 - Constraints (the 30% cap, 60% equity limit, 10% vol target) are our working
-  assumptions — to be confirmed/tuned with the sponsor.
+  assumptions, to be confirmed/tuned with the sponsor.
 - Expected returns are still the historical-mean placeholder; the macro model
   swaps in next. Risk uses Ledoit-Wolf shrinkage by default.
 - Returns are not yet excess-of-cash; once a 1-month cash series is added, Sharpe

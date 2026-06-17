@@ -1,4 +1,4 @@
-"""Optimizer — compare models and show how expected returns move the weights."""
+"""Optimizer, compare models and show how expected returns move the weights."""
 
 import sys
 from pathlib import Path

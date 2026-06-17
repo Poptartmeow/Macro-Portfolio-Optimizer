@@ -1,4 +1,4 @@
-"""Risk report — Sharpe, VaR/CVaR, drawdown, correlation matrix."""
+"""Risk report, Sharpe, VaR/CVaR, drawdown, correlation matrix."""
 
 import sys as _sys
 from pathlib import Path as _Path

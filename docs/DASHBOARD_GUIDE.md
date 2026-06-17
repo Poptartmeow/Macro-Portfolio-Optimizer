@@ -50,40 +50,40 @@ Where the numbers come from and how clean they are.
   (EMB, Dec 2007) sets our 2008 start. The macro table shows what we dropped
   (HY spread, 85% missing) and what we filled (dividend yield, interpolated).
 - **Why it matters:** garbage in, garbage out. This page is our honesty about the
-  data's limits — and it's the first thing a sponsor will poke at.
+  data's limits, and it's the first thing a sponsor will poke at.
 
 ### Macro  *(sub-tabs: Regime · Signals)*
 *The macro backdrop the portfolio should respond to.*
-- **Regime tab** — classifies every month into **Expansion / Slowdown / Contraction
+- **Regime tab**, classifies every month into **Expansion / Slowdown / Contraction
   / Recovery** from composite PMI (above/below 50) and its 3-month momentum.
   - *How to read it:* the timeline shades the cycle behind the PMI line; the
     asset×regime heatmap shows how each asset has actually performed in each regime.
-  - *Why it matters:* it's the empirical case for tilting — equities rip in
+  - *Why it matters:* it's the empirical case for tilting, equities rip in
     Recovery/Expansion and get hit in Contraction, where bonds hold up.
-- **Signals tab** — runs a regression of every asset's return on every macro factor
+- **Signals tab**, runs a regression of every asset's return on every macro factor
   (one-month lag, Newey-West errors) and shows the grid.
   - *How to read it:* color = strength. For t-stat, **|t| > 2 ≈ statistically
     real**; orange is positive, blue negative. Use the drill-down to see the actual
     scatter + fit line behind any cell.
   - *Why it matters:* it tells us *which* macro variables actually move *which*
-    assets — the basis for the expected-return model. (Early read: inflation is the
+    assets, the basis for the expected-return model. (Early read: inflation is the
     strongest signal; PMI is weaker than you'd expect.)
 
 ### Optimizer
 *Build one portfolio and see how it behaves.*
-- **What it shows:** an interactive mean-variance optimizer — pick the objective
+- **What it shows:** an interactive mean-variance optimizer, pick the objective
   (max-return at a vol target, or max-Sharpe with a diversification penalty), the
   covariance (sample vs Ledoit-Wolf shrinkage), and the weight box. Then weights,
   headline stats, a sensitivity chart, and a comparison vs the 60/40 benchmark.
-- **How to read it:** watch **"assets at bound"** and **"effective N"** — when most
+- **How to read it:** watch **"assets at bound"** and **"effective N"**, when most
   assets sit on a constraint, the box (not the math) is driving. The sensitivity
   chart shows whether changing an asset's expected return actually moves its weight
-  (right now it barely does — a key finding).
+  (right now it barely does, a key finding).
 - **Why it matters:** this is the core deliverable, and the page makes its current
   weakness visible.
 
 ### Ensemble
-*Don't bet on one method — run them all and combine.*
+*Don't bet on one method, run them all and combine.*
 - **What it shows:** eight portfolio-construction methods (equal-weight, inverse-vol,
   min-variance, max-Sharpe, risk parity, hierarchical risk parity, max-diversification,
   inverse-variance) built on the same inputs, then blended into one ensemble.
@@ -91,14 +91,14 @@ Where the numbers come from and how clean they are.
   the reference line); the heatmap shows every method's allocation at once; the bar
   is the final ensemble.
 - **Why it matters:** it's the institutional move (and straight out of the Ang et al.
-  2026 paper) — diversify across *methodologies*, not just assets, so we're not
+  2026 paper), diversify across *methodologies*, not just assets, so we're not
   hostage to one optimizer's quirks.
 
 ### Risk
 *Would we sleep at night holding this?*
 - **What it shows:** Sharpe, volatility, Value-at-Risk / CVaR, max drawdown, the
   drawdown path, the asset correlation matrix, and the return distribution.
-- **How to read it:** the correlation matrix is the "smell test" — our equity
+- **How to read it:** the correlation matrix is the "smell test", our equity
   sleeves correlate ~0.9, so they're almost one bet; bonds/commodities are the real
   diversifiers. VaR/CVaR quantify the bad months.
 - **Why it matters:** Greg asked for risk analytics, not just returns. *(Note: this
@@ -108,13 +108,13 @@ Where the numbers come from and how clean they are.
 ### Policy
 *Does the portfolio obey our own rules?*
 - **What it shows:** our Investment Policy Statement (IPS) and a **live compliance
-  check** of the policy portfolio against it — per-asset cap, total-equity cap,
-  fully-invested, volatility band, drawdown limit — with a PASS/BREACH badge.
+  check** of the policy portfolio against it, per-asset cap, total-equity cap,
+  fully-invested, volatility band, drawdown limit, with a PASS/BREACH badge.
 - **How to read it:** green ✓ = within policy, red ✗ = breach. The full IPS text is
   below the check.
 - **Why it matters:** the IPS is the governing document (the human sets the rules,
   every portfolio is checked against them). It's also how the same framework can run
-  at different risk levels — just change the limits.
+  at different risk levels, just change the limits.
 
 ### Findings
 *What we actually learned, in plain English.*
@@ -138,11 +138,11 @@ Where the numbers come from and how clean they are.
 | Policy | `optimizer/ips.py`, `docs/IPS.md` |
 | Findings | `docs/FINDINGS.md` |
 
-- **`src/macro_portfolio/`** — the actual model (importable package).
-- **`dashboard/`** — this app. `Home.py` is the entry; `pages/` are the sidebar
+- **`src/macro_portfolio/`**, the actual model (importable package).
+- **`dashboard/`**, this app. `Home.py` is the entry; `pages/` are the sidebar
   pages; `sec_*.py` are sub-tab sections; `theme.py` holds all colors/styling;
   `data_access.py` is the cached loader layer.
-- **`data/`** — inputs and cleaned outputs. **`docs/`** — these write-ups.
+- **`data/`**, inputs and cleaned outputs. **`docs/`**, these write-ups.
 
 To edit a chart, find its page in `dashboard/pages/` (or `sec_*.py`); to change the
 look, edit `theme.py`; to change a number, it's in `src/macro_portfolio/`.
@@ -151,22 +151,22 @@ look, edit `theme.py`; to change a number, it's in `src/macro_portfolio/`.
 
 ## Mini-glossary
 
-- **Sharpe ratio** — return per unit of risk (higher = better). Ours vs the 60/40 is
+- **Sharpe ratio**, return per unit of risk (higher = better). Ours vs the 60/40 is
   the bar to beat.
-- **Volatility** — annualized standard deviation of returns; our risk target is ~10%.
-- **Ledoit-Wolf shrinkage** — a more stable covariance estimate; tames the noise from
+- **Volatility**, annualized standard deviation of returns; our risk target is ~10%.
+- **Ledoit-Wolf shrinkage**, a more stable covariance estimate; tames the noise from
   our highly-correlated equities.
-- **Effective N** — roughly how many assets actually carry weight (higher = more
+- **Effective N**, roughly how many assets actually carry weight (higher = more
   diversified).
-- **Risk parity / HRP / max-diversification** — portfolio methods that lean on the
+- **Risk parity / HRP / max-diversification**, portfolio methods that lean on the
   risk structure instead of return forecasts.
-- **Regime** — which phase of the business cycle we're in (from PMI).
-- **t-stat / Newey-West** — is a regression relationship real (|t|>2), using errors
+- **Regime**, which phase of the business cycle we're in (from PMI).
+- **t-stat / Newey-West**, is a regression relationship real (|t|>2), using errors
   that account for autocorrelated monthly data.
-- **IPS** — Investment Policy Statement; the rules the portfolio must obey.
-- **60/40 benchmark** — 60% global stocks (ACWI) + 40% intl gov bonds (IGOV); the
+- **IPS**, Investment Policy Statement; the rules the portfolio must obey.
+- **60/40 benchmark**, 60% global stocks (ACWI) + 40% intl gov bonds (IGOV); the
   passive baseline we measure against.
-- **Lookahead bias** — accidentally using future info in a backtest; why we keep any
+- **Lookahead bias**, accidentally using future info in a backtest; why we keep any
   LLM out of the modeling loop.
 
-*This guide also lives at `docs/DASHBOARD_GUIDE.md` — edit there and this tab updates.*
+*This guide also lives at `docs/DASHBOARD_GUIDE.md`, edit there and this tab updates.*

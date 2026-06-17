@@ -1,4 +1,4 @@
-"""Findings — renders docs/FINDINGS.md so the write-up and dashboard stay in sync."""
+"""Findings, renders docs/FINDINGS.md so the write-up and dashboard stay in sync."""
 
 import sys as _sys
 from pathlib import Path as _Path

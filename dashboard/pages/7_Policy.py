@@ -1,4 +1,4 @@
-"""Investment Policy — the governing IPS + a live compliance check."""
+"""Investment Policy, the governing IPS + a live compliance check."""
 
 import sys
 from pathlib import Path
@@ -24,7 +24,7 @@ from macro_portfolio.risk.covariance import ledoit_wolf_cov   # noqa: E402
 
 st.markdown("# Policy")
 st.markdown(theme.flow_diagram(active="Policy"), unsafe_allow_html=True)
-st.caption("The IPS is the governing document — we set the rules, every portfolio "
+st.caption("The IPS is the governing document, we set the rules, every portfolio "
            "is checked against them (the role it plays in Ang et al. 2026).")
 
 # ── Compliance check of the policy portfolio ──

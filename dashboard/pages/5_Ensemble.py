@@ -1,4 +1,4 @@
-"""Methods & Ensemble — compare the full PC method library and combine them."""
+"""Methods & Ensemble, compare the full PC method library and combine them."""
 
 import sys
 from pathlib import Path
@@ -27,7 +27,7 @@ st.markdown("# Ensemble")
 st.markdown(theme.flow_diagram(active="Ensemble"), unsafe_allow_html=True)
 st.caption("Eight portfolio-construction methods built on the same inputs, then "
            "combined into one ensemble (the CIO step in Ang et al. 2026). "
-           "All pure-quant — no LLM, no lookahead. The **Optimizer** page tunes a "
+           "All pure-quant, no LLM, no lookahead. The **Optimizer** page tunes a "
            "single method interactively; this page compares them all.")
 
 rets = da.load_returns()
@@ -79,7 +79,7 @@ bench = da.load_benchmark()
 if bench is not None:
     b = bench["BENCH_60_40"].dropna()
     bsharpe = (b.mean() * 12) / (b.std() * np.sqrt(12))
-    st.caption(f"Reference — 60/40 ACWI/IGOV benchmark Sharpe ≈ **{bsharpe:.2f}**. "
+    st.caption(f"Reference, 60/40 ACWI/IGOV benchmark Sharpe ≈ **{bsharpe:.2f}**. "
                "Effective N = how many assets effectively carry weight (higher = "
                "more diversified). Concentration rises as Sharpe is maximized.")
 
@@ -110,5 +110,5 @@ bar = go.Figure(go.Bar(
     text=[f"{v*100:.1f}%" for v in ew.values], textposition="auto"))
 bar.update_layout(xaxis_title="Weight (%)")
 st.plotly_chart(theme.style_fig(bar, height=360), width='stretch')
-st.caption("The ensemble blends all eight methods — diversifying across "
+st.caption("The ensemble blends all eight methods, diversifying across "
            "*construction methodologies*, not just across assets.")

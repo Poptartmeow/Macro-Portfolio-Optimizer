@@ -45,7 +45,7 @@ def _register_template() -> None:
 
 
 def style_fig(fig: go.Figure, height: int | None = None) -> go.Figure:
-    # NOTE: do not set title_font here — that creates an empty title object that
+    # NOTE: do not set title_font here, that creates an empty title object that
     # Plotly renders as the literal "undefined". Title styling lives in the template.
     fig.update_layout(
         template="plotly_dark+uva",
@@ -126,7 +126,7 @@ def kpi(label: str, value: str, unit: str = "") -> str:
 
 
 # ─────────────────────────────────────────────
-# Apache ECharts (via streamlit-echarts) — UVA-themed option scaffolding
+# Apache ECharts (via streamlit-echarts), UVA-themed option scaffolding
 # ─────────────────────────────────────────────
 
 def echarts_base() -> dict:

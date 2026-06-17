@@ -1,4 +1,4 @@
-"""Signals section (macro regression sweep) — rendered as a tab inside Macro."""
+"""Signals section (macro regression sweep), rendered as a tab inside Macro."""
 
 import sys
 from pathlib import Path

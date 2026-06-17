@@ -1,5 +1,5 @@
 """
-UVA Macro Portfolio Optimizer — dashboard entry point (Home: Overview / About).
+UVA Macro Portfolio Optimizer, dashboard entry point (Home: Overview / About).
 
 Run from the repo root:
     streamlit run dashboard/Home.py
@@ -49,7 +49,6 @@ with tab_overview:
         "in the sidebar."
     )
     st.markdown(theme.flow_diagram(), unsafe_allow_html=True)
-    st.caption("Open any page and its stage lights up. New here? See the **About** tab.")
 
     rets = da.load_returns()
     facs = da.load_factors()
@@ -66,7 +65,7 @@ with tab_overview:
     left, right = st.columns([3, 2])
 
     with left:
-        st.subheader("Growth of $1 — aligned window")
+        st.subheader("Growth of $1, aligned window")
         cum = (1 + rets).cumprod()
         dates = [d.strftime("%Y-%m") for d in cum.index]
         series = [{
