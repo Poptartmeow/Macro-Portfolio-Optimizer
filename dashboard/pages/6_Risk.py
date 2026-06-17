@@ -13,11 +13,11 @@ import streamlit as st
 import data_access as da
 import theme
 
-st.set_page_config(page_title="Risk Report", layout="wide")
+st.set_page_config(page_title="Risk", layout="wide")
 theme.apply_theme()
 
-st.markdown("# Risk Report")
-st.markdown(theme.flow_diagram(active="Backtest"), unsafe_allow_html=True)
+st.markdown("# Risk")
+st.markdown(theme.flow_diagram(active="Risk"), unsafe_allow_html=True)
 
 rets = da.load_returns()
 PERIODS = da.PERIODS

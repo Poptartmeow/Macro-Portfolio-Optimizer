@@ -29,7 +29,7 @@ st.markdown("# Optimizer")
 st.markdown(theme.flow_diagram(active="Optimizer"), unsafe_allow_html=True)
 st.caption("Tune a single optimizer and see how the box constraints flatten the "
            "expected-return signal. Expected returns = historical mean (macro model "
-           "swaps in next). To compare all methods at once, see **Methods & Ensemble**.")
+           "swaps in next). To compare all methods at once, see **Ensemble**.")
 
 EQUITY = ["SPY", "VXF", "EWC", "EFA", "VWO"]
 rets = da.load_returns()

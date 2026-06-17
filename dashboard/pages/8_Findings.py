@@ -14,6 +14,8 @@ import theme
 st.set_page_config(page_title="Findings", layout="wide")
 theme.apply_theme()
 
+st.markdown(theme.flow_diagram(active="Findings"), unsafe_allow_html=True)
+
 md_path = da.REPO_ROOT / "docs" / "FINDINGS.md"
 if md_path.exists():
     text = md_path.read_text()

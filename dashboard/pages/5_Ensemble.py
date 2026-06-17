@@ -15,7 +15,7 @@ if _DASH not in sys.path:
 import data_access as da
 import theme
 
-st.set_page_config(page_title="Methods & Ensemble", layout="wide")
+st.set_page_config(page_title="Ensemble", layout="wide")
 theme.apply_theme()
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -23,8 +23,8 @@ from macro_portfolio.optimizer import methods as M               # noqa: E402
 from macro_portfolio.risk.covariance import (                    # noqa: E402
     sample_cov, ledoit_wolf_cov)
 
-st.markdown("# Methods & Ensemble")
-st.markdown(theme.flow_diagram(active="Optimizer"), unsafe_allow_html=True)
+st.markdown("# Ensemble")
+st.markdown(theme.flow_diagram(active="Ensemble"), unsafe_allow_html=True)
 st.caption("Eight portfolio-construction methods built on the same inputs, then "
            "combined into one ensemble (the CIO step in Ang et al. 2026). "
            "All pure-quant — no LLM, no lookahead. The **Optimizer** page tunes a "

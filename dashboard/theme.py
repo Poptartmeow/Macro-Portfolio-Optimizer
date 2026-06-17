@@ -125,9 +125,53 @@ def kpi(label: str, value: str, unit: str = "") -> str:
             f"<div class='kpi-value'>{value}{unit_html}</div></div>")
 
 
+# ─────────────────────────────────────────────
+# Apache ECharts (via streamlit-echarts) — UVA-themed option scaffolding
+# ─────────────────────────────────────────────
+
+def echarts_base() -> dict:
+    """Shared UVA dark styling for every ECharts option dict."""
+    return {
+        "backgroundColor": "transparent",
+        "textStyle": {"color": WHITE, "fontFamily": "Inter, sans-serif"},
+        "color": PALETTE,
+        "tooltip": {
+            "backgroundColor": "rgba(27,34,56,0.95)",
+            "borderColor": "rgba(61,210,255,0.35)",
+            "textStyle": {"color": WHITE},
+        },
+        "legend": {"textStyle": {"color": SLATE}, "top": 2, "type": "scroll",
+                   "inactiveColor": "#3a4358"},
+        "grid": {"left": 56, "right": 24, "top": 44, "bottom": 44, "containLabel": True},
+    }
+
+
+def echarts_axis(name: str = "", value: bool = True) -> dict:
+    """A dark-styled axis."""
+    return {
+        "type": "value" if value else "category",
+        "name": name,
+        "nameTextStyle": {"color": SLATE},
+        "axisLine": {"lineStyle": {"color": "rgba(91,100,120,0.5)"}},
+        "axisLabel": {"color": SLATE},
+        "splitLine": {"lineStyle": {"color": "rgba(91,100,120,0.16)"}},
+    }
+
+
+def echarts_area_gradient(color: str) -> dict:
+    """A top→bottom fade for area fills (the futuristic look)."""
+    return {
+        "type": "linear", "x": 0, "y": 0, "x2": 0, "y2": 1,
+        "colorStops": [
+            {"offset": 0, "color": color + "66"},
+            {"offset": 1, "color": color + "05"},
+        ],
+    }
+
+
 def flow_diagram(active: str = "") -> str:
-    stages = ["Ingest", "Factor Model", "Expected Returns",
-              "Optimizer", "Backtest", "Dashboard"]
+    stages = ["Data", "Macro", "Optimizer",
+              "Ensemble", "Risk", "Policy", "Findings"]
     pills = []
     for i, s in enumerate(stages):
         cls = "pill active" if s.lower() == active.lower() else "pill"

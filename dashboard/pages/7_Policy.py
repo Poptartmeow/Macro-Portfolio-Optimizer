@@ -14,7 +14,7 @@ if _DASH not in sys.path:
 import data_access as da
 import theme
 
-st.set_page_config(page_title="Investment Policy", layout="wide")
+st.set_page_config(page_title="Policy", layout="wide")
 theme.apply_theme()
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -22,8 +22,8 @@ from macro_portfolio.optimizer import optimizer as O          # noqa: E402
 from macro_portfolio.optimizer import ips as IPS              # noqa: E402
 from macro_portfolio.risk.covariance import ledoit_wolf_cov   # noqa: E402
 
-st.markdown("# Investment Policy")
-st.markdown(theme.flow_diagram(active="Optimizer"), unsafe_allow_html=True)
+st.markdown("# Policy")
+st.markdown(theme.flow_diagram(active="Policy"), unsafe_allow_html=True)
 st.caption("The IPS is the governing document — we set the rules, every portfolio "
            "is checked against them (the role it plays in Ang et al. 2026).")
 
