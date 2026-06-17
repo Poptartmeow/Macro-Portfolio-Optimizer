@@ -73,6 +73,49 @@ def current(reg: pd.DataFrame) -> dict:
     return {"regime": last, "months_in_regime": n, "as_of": valid.index[-1]}
 
 
+QUADRANTS = ["Goldilocks", "Reflation", "Stagflation", "Deflation"]
+
+
+def classify_quadrant(factors: pd.DataFrame) -> pd.DataFrame:
+    """
+    Growth × Inflation quadrant (the 'macro clock'):
+      growth  = PMI above/below 50
+      inflation = 3-month change in CPI YoY (rising/falling)
+
+        PMI ≥ 50 & inflation falling  → Goldilocks   (growth up, price pressure easing)
+        PMI ≥ 50 & inflation rising   → Reflation     (growth up, prices heating)
+        PMI < 50 & inflation rising   → Stagflation   (growth down, prices up)
+        PMI < 50 & inflation falling  → Deflation      (growth down, prices easing)
+    """
+    pmi = factors[PMI_COL].astype(float)
+    cpi = factors[CPI_COL].astype(float)
+    infl_mom = cpi - cpi.shift(MOMENTUM_LAG)
+    growth_up = pmi >= EXPANSION_LINE
+    infl_up = infl_mom > 0
+
+    quad = pd.Series(index=pmi.index, dtype="object")
+    quad[growth_up & ~infl_up] = "Goldilocks"
+    quad[growth_up & infl_up] = "Reflation"
+    quad[~growth_up & infl_up] = "Stagflation"
+    quad[~growth_up & ~infl_up] = "Deflation"
+    quad[pmi.isna() | infl_mom.isna()] = None
+
+    return pd.DataFrame({"PMI": pmi, "CPI_YoY": cpi,
+                         "CPI_mom3": infl_mom, "quadrant": quad})
+
+
+def quadrant_conditional_returns(returns: pd.DataFrame, quad: pd.DataFrame,
+                                 periods: int = 12) -> pd.DataFrame:
+    """Annualized mean return per asset, conditioned on quadrant (assets × quadrants)."""
+    q = quad["quadrant"].reindex(returns.index)
+    out = {}
+    for name in QUADRANTS:
+        mask = q == name
+        if mask.any():
+            out[name] = returns[mask].mean() * periods
+    return pd.DataFrame(out).reindex(columns=[c for c in QUADRANTS if c in out])
+
+
 def conditional_returns(returns: pd.DataFrame, reg: pd.DataFrame,
                         periods: int = 12) -> pd.DataFrame:
     """Annualized mean return per asset, conditioned on regime (assets × regimes)."""
