@@ -1,7 +1,7 @@
 """
 Curate the raw macro panel into a clean monthly factor table.
 
-Problems in data/us_macro_2007_2026.csv this fixes (all documented in the
+Problems in data/macro_data/raw/us_macro_2007_2026.csv this fixes (all documented in the
 fill-log it writes):
   1. ~23 duplicate rows per month  -> collapse to one monthly observation (mean).
   2. DIV_YIELD_USA ~28% missing     -> time-interpolate interior gaps, then
@@ -13,7 +13,7 @@ fill-log it writes):
 Gap-filling philosophy: only ever carry information FORWARD or interpolate
 between known points. Never use future values to fill the past (look-ahead).
 
-Outputs (to data/curated/):
+Outputs (to data/macro_data/processed/):
   macro_monthly.csv   — clean, deduped, gap-filled monthly factors (month-end)
   macro_fill_log.csv  — one row per column: what was done and how many filled
 
@@ -27,8 +27,8 @@ import pandas as pd
 
 from macro_portfolio import paths
 
-RAW = paths.DATA_DIR / "us_macro_2007_2026.csv"
-CURATED = paths.DATA_DIR / "curated"
+RAW = paths.MACRO_RAW / "us_macro_2007_2026.csv"
+CURATED = paths.MACRO_PROCESSED
 DROP_THRESHOLD = 0.60  # drop a column if more than this fraction is missing
 
 

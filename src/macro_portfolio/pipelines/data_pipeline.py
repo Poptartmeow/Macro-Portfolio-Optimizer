@@ -7,12 +7,12 @@ splice, computes monthly returns, and saves clean output files.
 Run:
     python -m macro_portfolio.pipelines.data_pipeline
 
-Outputs (written to data/):
-    prices_raw.csv       — raw monthly adjusted close prices
-    returns_full.csv     — all returns, NaNs in early months where a series doesn't exist yet
-    returns_aligned.csv  — ★ clean monthly returns, common window, no NaNs (main input to optimizer)
-    summary_stats.csv    — annualized return / vol / sharpe per asset
-    data_quality.csv     — coverage dates, missing months, splice info
+Outputs:
+    market_data/raw/prices_raw.csv             — raw monthly adjusted close prices
+    market_data/processed/returns_full.csv     — all returns, NaNs in early months where a series doesn't exist yet
+    market_data/processed/returns_aligned.csv  — ★ clean monthly returns, common window, no NaNs (main input to optimizer)
+    market_data/processed/summary_stats.csv    — annualized return / vol / sharpe per asset
+    market_data/processed/data_quality.csv     — coverage dates, missing months, splice info
 
 Asset Universe:
     SPY   — US Large Cap (S&P 500)                 [from 1993]
@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-from macro_portfolio.paths import DATA_DIR
+from macro_portfolio.paths import MARKET_RAW, MARKET_PROCESSED
 
 # ─────────────────────────────────────────────
 # CONFIGURATION
@@ -49,7 +49,8 @@ START_DATE  = "2007-01-01"   # earliest common start across the universe
 END_DATE    = _dt.date.today().isoformat()  # e.g. "2026-06-02" — yfinance needs a real date, not "today"
 FREQUENCY   = "ME"           # Month-end
 PERIODS     = 12             # Months per year
-OUTPUT_DIR  = str(DATA_DIR)
+RAW_DIR     = str(MARKET_RAW)        # raw price pulls
+OUTPUT_DIR  = str(MARKET_PROCESSED)  # returns, stats, benchmark (optimizer inputs)
 
 # Core universe — each ETF and a human-readable label
 UNIVERSE = {
@@ -365,16 +366,17 @@ def save_outputs(
     summary_stats:   pd.DataFrame,
     dq_report:       pd.DataFrame,
 ):
+    os.makedirs(RAW_DIR, exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    prices_raw.to_csv(f"{OUTPUT_DIR}/prices_raw.csv")
+    prices_raw.to_csv(f"{RAW_DIR}/prices_raw.csv")
     full_returns.to_csv(f"{OUTPUT_DIR}/returns_full.csv")
     aligned_returns.to_csv(f"{OUTPUT_DIR}/returns_aligned.csv")
     summary_stats.to_csv(f"{OUTPUT_DIR}/summary_stats.csv")
     dq_report.to_csv(f"{OUTPUT_DIR}/data_quality.csv")
 
-    print(f"\n  Saved to {OUTPUT_DIR}/")
-    print(f"    prices_raw.csv          — raw monthly close prices")
+    print(f"\n  Saved raw prices to {RAW_DIR}/prices_raw.csv")
+    print(f"  Saved to {OUTPUT_DIR}/")
     print(f"    returns_full.csv        — all returns, NaNs where no data yet")
     print(f"    returns_aligned.csv     — ★ use this for optimizer (no NaNs)")
     print(f"    summary_stats.csv       — annualized stats per asset")
@@ -434,7 +436,7 @@ def run_pipeline():
 
     print(f"\n{sep}")
     print("  PIPELINE COMPLETE")
-    print(f"  Feed  data/returns_aligned.csv  into the optimizer.")
+    print(f"  Feed  data/market_data/processed/returns_aligned.csv  into the optimizer.")
     print(sep)
 
     return aligned_rets, stats

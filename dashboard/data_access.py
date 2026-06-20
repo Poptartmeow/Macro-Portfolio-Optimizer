@@ -18,6 +18,10 @@ import streamlit as st
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = REPO_ROOT / "data"
+MARKET_PROCESSED = DATA_DIR / "market_data" / "processed"
+MACRO_RAW = DATA_DIR / "macro_data" / "raw"
+MACRO_PROCESSED = DATA_DIR / "macro_data" / "processed"
+MACRO_PMI = MACRO_PROCESSED / "pmi"
 SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
@@ -28,7 +32,7 @@ PERIODS = 12  # months per year
 @st.cache_data(show_spinner=False)
 def load_returns() -> pd.DataFrame:
     """Aligned monthly asset returns, indexed by month-end."""
-    df = pd.read_csv(DATA_DIR / "returns_aligned.csv", index_col=0, parse_dates=True)
+    df = pd.read_csv(MARKET_PROCESSED / "returns_aligned.csv", index_col=0, parse_dates=True)
     return df
 
 
@@ -42,7 +46,7 @@ def load_regime() -> pd.DataFrame:
 @st.cache_data(show_spinner=False)
 def load_benchmark() -> pd.DataFrame | None:
     """60/40 ACWI/IGOV monthly returns (or None if not fetched yet)."""
-    p = DATA_DIR / "benchmark_returns.csv"
+    p = MARKET_PROCESSED / "benchmark_returns.csv"
     if not p.exists():
         return None
     return pd.read_csv(p, index_col=0, parse_dates=True)
@@ -51,16 +55,16 @@ def load_benchmark() -> pd.DataFrame | None:
 @st.cache_data(show_spinner=False)
 def load_factors() -> pd.DataFrame:
     """Monthly macro factors (cleaned US macro panel + composite PMI)."""
-    curated = DATA_DIR / "curated" / "macro_monthly.csv"
+    curated = MACRO_PROCESSED / "macro_monthly.csv"
     if curated.exists():
         macro = pd.read_csv(curated, index_col=0, parse_dates=True)
     else:  # fallback: clean on the fly
-        macro = pd.read_csv(DATA_DIR / "us_macro_2007_2026.csv")
+        macro = pd.read_csv(MACRO_RAW / "us_macro_2007_2026.csv")
         macro["Month"] = pd.PeriodIndex(macro["Month"], freq="M")
         macro = macro.groupby("Month").mean(numeric_only=True)
         macro.index = macro.index.to_timestamp(how="end").normalize()
 
-    pmi = pd.read_csv(DATA_DIR / "PMI_Composite_US.csv", parse_dates=["date"])
+    pmi = pd.read_csv(MACRO_PMI / "PMI_Composite_US.csv", parse_dates=["date"])
     pmi = pmi.set_index("date")[["PMI_Composite_US"]]
     pmi.index = pmi.index.to_period("M").to_timestamp(how="end").normalize()
 
@@ -71,7 +75,7 @@ def load_factors() -> pd.DataFrame:
 @st.cache_data(show_spinner=False)
 def load_fill_log() -> pd.DataFrame | None:
     """The macro gap-filling log written by research/curate.py, if present."""
-    p = DATA_DIR / "curated" / "macro_fill_log.csv"
+    p = MACRO_PROCESSED / "macro_fill_log.csv"
     return pd.read_csv(p) if p.exists() else None
 
 

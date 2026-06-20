@@ -12,7 +12,7 @@ is untouched.
 Run:
     python -m macro_portfolio.pipelines.benchmark
 
-Output (to data/):
+Output (to data/market_data/processed/):
     benchmark_returns.csv  — columns: ACWI, IGOV, BENCH_60_40 (monthly returns)
 
 Note: IGOV inception is 2009, so the blended series effectively starts 2009 —
@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 import pandas as pd
 import yfinance as yf
 
-from macro_portfolio.paths import DATA_DIR
+from macro_portfolio.paths import MARKET_PROCESSED
 
 WEIGHTS = {"ACWI": 0.60, "IGOV": 0.40}  # global equity / intl govt bonds
 START_DATE = "2008-01-01"
@@ -75,7 +75,7 @@ def build_benchmark() -> pd.DataFrame:
 def main() -> None:
     print("Fetching ACWI + IGOV from yfinance...")
     bench = build_benchmark()
-    path = DATA_DIR / "benchmark_returns.csv"
+    path = MARKET_PROCESSED / "benchmark_returns.csv"
     bench.to_csv(path)
     span = f"{bench.index.min().date()} -> {bench.index.max().date()}"
     print(f"  Saved {path}")

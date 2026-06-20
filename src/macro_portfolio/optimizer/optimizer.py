@@ -6,7 +6,7 @@ mean-variance optimization to find the efficient frontier portfolio
 at a target volatility level.
 
 Run the data pipeline first:
-    python -m macro_portfolio.pipelines.data_pipeline   ← produces data/returns_aligned.csv
+    python -m macro_portfolio.pipelines.data_pipeline   ← produces data/market_data/processed/returns_aligned.csv
 
 Then run this:
     python -m macro_portfolio.optimizer.optimizer
@@ -39,7 +39,7 @@ import pandas as pd
 from scipy.optimize import minimize
 from typing import Optional
 
-from macro_portfolio.paths import DATA_DIR
+from macro_portfolio.paths import MARKET_PROCESSED
 
 
 # ─────────────────────────────────────────────
@@ -78,7 +78,7 @@ MAX_WEIGHT = 0.30          # 30% cap per asset
 # 2. DATA LAYER — reads from data_pipeline.py output
 # ─────────────────────────────────────────────
 
-RETURNS_PATH = str(DATA_DIR / "returns_aligned.csv")   # produced by data_pipeline.py
+RETURNS_PATH = str(MARKET_PROCESSED / "returns_aligned.csv")   # produced by data_pipeline.py
 
 def load_returns(path: str = RETURNS_PATH) -> pd.DataFrame:
     """

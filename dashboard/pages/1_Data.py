@@ -100,7 +100,7 @@ with tab_factors:
         disp.insert(1, "category", [FACTOR_CATEGORY.get(c, "") for c in disp["name"]])
         st.dataframe(disp, width='stretch', hide_index=True)
 
-        raw = pd.read_csv(da.DATA_DIR / "us_macro_2007_2026.csv")
+        raw = pd.read_csv(da.MACRO_RAW / "us_macro_2007_2026.csv")
         fac = da.load_factors()
         n_drop = int(log["action"].astype(str).str.contains("DROP", case=False).sum())
         n_fill = int((log["n_filled"] > 0).sum())
