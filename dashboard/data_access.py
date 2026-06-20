@@ -163,6 +163,11 @@ FACTOR_LABELS = {
     "SPREAD_10Y2Y_USA": "Term Spread 10Y–2Y",
     "SPREAD_BAA_AAA_USA": "Baa–Aaa Spread",
     "PMI_Composite_US": "Composite PMI",
+    # derived factors (per Greg's meeting)
+    "INFLATION_ACCEL": "Inflation Acceleration (ΔCPI)",
+    "EXCESS_DIV_YIELD": "Excess Dividend Yield",
+    "LOG_VIX": "Log VIX",
+    "PMI_CHANGE": "PMI Change (MoM)",
 }
 
 

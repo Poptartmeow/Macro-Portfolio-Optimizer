@@ -42,6 +42,8 @@ FACTOR_CATEGORY = {
     "CREDIT_SPREAD_BAA_USA": "Credit", "CREDIT_SPREAD_AAA_USA": "Credit",
     "HY_SPREAD_USA": "Credit", "SPREAD_BAA_AAA_USA": "Credit",
     "SPREAD_10Y3M_USA": "Term spread", "SPREAD_10Y2Y_USA": "Term spread",
+    "INFLATION_ACCEL": "Inflation", "EXCESS_DIV_YIELD": "Valuation",
+    "LOG_VIX": "Volatility", "PMI_CHANGE": "Growth",
 }
 
 tab_assets, tab_factors = st.tabs(["Assets", "Macro Factors"])
@@ -100,23 +102,22 @@ with tab_factors:
         disp.insert(1, "category", [FACTOR_CATEGORY.get(c, "") for c in disp["name"]])
         st.dataframe(disp, width='stretch', hide_index=True)
 
-        raw = pd.read_csv(da.MACRO_RAW / "us_macro_2007_2026.csv")
         fac = da.load_factors()
-        n_drop = int(log["action"].astype(str).str.contains("DROP", case=False).sum())
+        n_pending = int(log["action"].astype(str).str.contains("PENDING", case=False).sum())
+        n_derived = int(log["source"].astype(str).str.contains("derived|yfinance|PMI", case=False).sum()) \
+            if "source" in log.columns else 0
         n_fill = int((log["n_filled"] > 0).sum())
-        n_clean = len(log) - n_drop - n_fill
         st.markdown(
-            f"<div class='glass'>The raw macro file arrives messy, <b>{len(raw):,} "
-            f"rows</b> with ~23 duplicate rows per month. <code>research/curate.py</code> "
-            f"collapses it to <b>{fac.shape[0]} monthly observations × {fac.shape[1]} "
-            f"factors</b>: <b>{n_clean}</b> series came through clean, <b>{n_fill}</b> "
-            f"were gap-filled by interpolation, and <b>{n_drop}</b> was dropped as too "
-            f"sparse to trust (the table shows exactly what happened to each). "
+            f"<div class='glass'><code>research/curate.py</code> builds the factor panel "
+            f"from the 2002 FRED/OECD source: <b>{fac.shape[0]} monthly observations × "
+            f"{fac.shape[1]} factors</b> back to 2002. <b>{n_fill}</b> base series had small "
+            f"interior gaps filled by interpolation; <b>{n_derived}</b> factors are derived "
+            f"or fetched (inflation acceleration, excess dividend yield, log-VIX, PMI change); "
+            f"<b>{n_pending}</b> are flagged <b>PENDING</b> (high-yield spread, earnings-yield "
+            f"premium) until we source them. The table shows exactly what happened to each. "
             f"<br><span style='color:#9AA5B8'>Cleaning rule: only carry information "
             f"forward or interpolate between known points, never backfill the past, "
-            f"so no look-ahead bias. The panel is assembled manually today; a "
-            f"programmatic FRED/OECD pull is the next step to make refreshing it a "
-            f"one-command job.</span></div>",
+            f"so no look-ahead bias.</span></div>",
             unsafe_allow_html=True)
     else:
         st.info("Run `python -m macro_portfolio.research.curate` to generate the "

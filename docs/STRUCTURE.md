@@ -79,12 +79,12 @@ bottom of `optimizer.py`. The PMI pipeline exists to feed that model.
 | `market_data/processed/summary_stats.csv`         | data_pipeline         | Annualized return / vol / Sharpe per asset (human-readable overview) |
 | `market_data/processed/benchmark_returns.csv`     | benchmark             | 60/40 ACWI/IGOV monthly returns |
 | `market_data/raw/prices_raw.csv`                  | data_pipeline         | Raw monthly adjusted-close prices |
-| `macro_data/processed/macro_monthly.csv`          | curate                | Cleaned, gap-filled monthly factor panel |
-| `macro_data/processed/macro_fill_log.csv`         | curate                | Gap-filling log (one row per column) |
+| `macro_data/processed/macro_monthly.csv`          | curate                | Factor panel, 2002→present: cleaned levels + derived factors (inflation accel, excess div yield, log-VIX, PMI change) |
+| `macro_data/processed/macro_fill_log.csv`         | curate                | One row per factor: source/derivation, missing %, fill action (incl. PENDING factors) |
 | `macro_data/processed/pmi/PMI_Manufacturing_US.csv`    | pmi              | Manufacturing PMI (2002→present) |
 | `macro_data/processed/pmi/PMI_NonManufacturing_US.csv` | pmi              | Non-Manufacturing PMI (2002→present) |
 | `macro_data/processed/pmi/PMI_Composite_US.csv`        | pmi              | Weighted composite PMI (2002→present) |
-| `macro_data/raw/us_macro_2007_2026.csv`           | **external / manual** | OECD/FRED macro panel — see Known Gaps below |
+| `macro_data/raw/us_macro_2002_2026.csv`           | **external / manual** | OECD/FRED macro panel (2002→2026-04), the curation source — see Known Gaps below |
 
 ### `data/macro_data/raw/pmi/` (PMI inputs, not generated)
 
@@ -110,9 +110,14 @@ Refresh procedure for the `.txt` files is documented in
 
 ## Known gaps / TODOs
 
-- **`us_macro_2007_2026.csv` has no generating pipeline.** The OECD/FRED macro
-  panel was produced manually or by code outside this repo. A
-  `pipelines/macro_panel.py` to reproduce it reproducibly is still to be written.
+- **The macro panel (`us_macro_2002_2026.csv`) has no generating pipeline.** The
+  OECD/FRED source is produced manually outside this repo; `curate.py` reads it,
+  cleans it, and adds the derived factors. A `pipelines/macro_panel.py` to pull it
+  reproducibly is still to be written. (`us_macro_2007_2026.csv` is the older,
+  superseded source, kept for reference.)
+- **Two factors still PENDING.** `HY_SPREAD_USA` (high-yield spread, to replace
+  Baa−Aaa) and `EARNINGS_YIELD_PREMIUM` (S&P 500 E/P) aren't in any source yet —
+  they're logged as PENDING in the fill log until sourced.
 - **Non-US PMI coverage.** Only US PMI is implemented. The pipeline docstrings
   list Eurozone, developed-ex-US, and EM regions as planned but not yet built.
 - **Macro model not yet wired in.** Expected returns are still the historical
