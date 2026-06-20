@@ -43,7 +43,7 @@ US PMI as the primary macro indicator for the US equity bucket. Non-US regions a
 - **Release timing:** Third business day of each month, describing the prior month
 - **Free source:** [investing.com](https://www.investing.com/economic-calendar/ism-non-manufacturing-pmi-176)
 
-**Why investing.com and not FRED?** FRED used to host ISM data directly, but removed it. S&P Global's competing PMI series is paywalled. DBnomics only goes back to 2020. investing.com has the full history going back to 2006–2007, and the table can be copied manually.
+**Why investing.com and not FRED?** FRED used to host ISM data directly, but removed it. S&P Global's competing PMI series is paywalled. DBnomics only goes back to 2020. investing.com has the full history going back to 2002, and the table can be copied manually.
 
 ---
 
@@ -52,13 +52,13 @@ US PMI as the primary macro indicator for the US equity bucket. Non-US regions a
 Both series were pulled manually from investing.com's Economic Calendar historical data tables. The process for each:
 
 1. Navigate to the investing.com page linked above
-2. Scroll down to the Historical Data table and click "Show More" until the table goes back to at least January 2007
+2. Scroll down to the Historical Data table and click "Show More" until the table goes back to at least January 2002
 3. Select all rows (including the header), copy
-4. Paste into the corresponding raw text file in `data/raw/`
+4. Paste into the corresponding raw text file in `data/macro_data/raw/pmi/`
 
 The raw files are:
-- `data/raw/PMI_Manufacturing_US.txt`
-- `data/raw/PMI_Non_Manufacturing_US.txt`
+- `data/macro_data/raw/pmi/PMI_US_Man`     (Manufacturing)
+- `data/macro_data/raw/pmi/PMI_US_NonMan`  (Non-Manufacturing)
 
 This is a manual refresh, needs to be done once a month after each release.
 
@@ -72,47 +72,32 @@ investing.com lists rows by **release date**, but the ISM PMI released in (say) 
 Jun 01, 2026 (May)    10:00    54.0    53.3
 ```
 
-The `(May)` tells you the reference period. Our pipelines extract this parenthetical and key all output data by **reference month**, not release date. This matches the FRED convention and avoids off-by-one errors in the optimizer (you don't want to credit June's release to June when it actually describes May).
+The `(May)` tells you the reference period. The pipeline extracts this parenthetical and keys all output data by **reference month**, not release date. This matches the FRED convention and avoids off-by-one errors in the optimizer (you don't want to credit June's release to June when it actually describes May).
 
 For older rows where the parenthetical is missing, the pipeline infers the reference month as release month − 1.
 
 ---
 
-## Pipelines
+## Pipeline
 
-Three pipelines process the raw data into clean CSVs for the optimizer.
+A single pipeline processes both raw dumps into the three clean CSVs the optimizer consumes.
 
-### Pipeline 1 — Manufacturing PMI
-**File:** `src/macro_portfolio/pipelines/pmi_manufacturing.py`  
-**Run:** `python -m macro_portfolio.pipelines.pmi_manufacturing`  
-**Input:** `data/raw/PMI_Manufacturing_US.txt`  
+**File:** `src/macro_portfolio/pipelines/pmi.py`  
+**Run:** `python -m macro_portfolio.pipelines.pmi`  
+**Inputs:**
+- `data/macro_data/raw/pmi/PMI_US_Man`    (Manufacturing dump)
+- `data/macro_data/raw/pmi/PMI_US_NonMan` (Non-Manufacturing dump)
+
 **Outputs:**
-- `data/PMI_Manufacturing_US.csv` — windowed to project start date (2007-01-01), fed into optimizer
-- `data/PMI_Manufacturing_US_full.csv` — full unwindowed history for reference
+| File | Column(s) |
+|---|---|
+| `data/macro_data/processed/pmi/PMI_Manufacturing_US.csv` | `PMI_US` |
+| `data/macro_data/processed/pmi/PMI_NonManufacturing_US.csv` | `PMI_NM_US` |
+| `data/macro_data/processed/pmi/PMI_Composite_US.csv` | `PMI_US`, `PMI_NM_US`, `PMI_Composite_US`, `source` |
 
-**Output column:** `PMI_US`
+The data starts in **2002**. The window is configurable via `START_DATE` in the script (currently 2002, i.e. it keeps everything).
 
-### Pipeline 2 — Non-Manufacturing (Services) PMI
-**File:** `src/macro_portfolio/pipelines/pmi_nonmanufacturing.py`  
-**Run:** `python -m macro_portfolio.pipelines.pmi_nonmanufacturing`  
-**Input:** `data/raw/PMI_Non_Manufacturing_US.txt`  
-**Outputs:**
-- `data/PMI_NonManufacturing_US.csv` — windowed series
-- `data/PMI_NonManufacturing_US_full.csv` — full history
-
-**Output column:** `PMI_NM_US`
-
-### Pipeline 3 — Composite PMI
-**File:** `src/macro_portfolio/pipelines/pmi_composite.py`  
-**Run:** `python -m macro_portfolio.pipelines.pmi_composite`  
-**Inputs:** Outputs of Pipelines 1 and 2 (must run those first)  
-**Outputs:**
-- `data/PMI_Composite_US.csv` — windowed composite, fed into optimizer
-- `data/PMI_Composite_US_full.csv` — full history
-
-**Output columns:** `PMI_US`, `PMI_NM_US`, `PMI_Composite_US`, `source`
-
-The `source` column records whether each month was built from both series, or just one (e.g. when one release hasn't come out yet).
+The `source` column records whether each composite month was built from both series, or just one (e.g. when one release hasn't come out yet).
 
 ---
 
@@ -130,17 +115,13 @@ If one series is missing for a given month (e.g. the manufacturing release hasn'
 
 ---
 
-## Run Order
+## Run
 
-Always run in sequence:
+A single command builds all three series (Manufacturing, Non-Manufacturing, and Composite):
 
 ```
-python -m macro_portfolio.pipelines.pmi_manufacturing
-python -m macro_portfolio.pipelines.pmi_nonmanufacturing
-python -m macro_portfolio.pipelines.pmi_composite
+python -m macro_portfolio.pipelines.pmi
 ```
-
-Pipeline 3 reads the CSVs produced by 1 and 2, so running it first will error.
 
 ---
 
@@ -148,11 +129,11 @@ Pipeline 3 reads the CSVs produced by 1 and 2, so running it first will error.
 
 1. Go to the investing.com pages for each series
 2. Copy the updated historical table (the new month will appear at the top)
-3. Paste into the corresponding `.txt` file in `data/raw/` (overwrite the whole file)
-4. Run Pipelines 1, 2, and 3 in order
+3. Paste into the corresponding file in `data/macro_data/raw/pmi/` — `PMI_US_Man` or `PMI_US_NonMan` (overwrite the whole file)
+4. Run the pipeline: `python -m macro_portfolio.pipelines.pmi`
 5. Verify the last row in each output CSV reflects the new month
 
-Manufacturing releases on the **1st business day** of the month. Non-Manufacturing releases on the **3rd business day**. Run both pipelines together once Non-Manufacturing is out — no need to run Pipeline 1 twice.
+Manufacturing releases on the **1st business day** of the month. Non-Manufacturing releases on the **3rd business day**. Refresh both dumps once Non-Manufacturing is out, then run the pipeline once.
 
 ---
 
