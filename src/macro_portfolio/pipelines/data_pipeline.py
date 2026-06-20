@@ -9,10 +9,11 @@ Run:
 
 Outputs:
     market_data/raw/prices_raw.csv             — raw monthly adjusted close prices
-    market_data/processed/returns_full.csv     — all returns, NaNs in early months where a series doesn't exist yet
     market_data/processed/returns_aligned.csv  — ★ clean monthly returns, common window, no NaNs (main input to optimizer)
     market_data/processed/summary_stats.csv    — annualized return / vol / sharpe per asset
-    market_data/processed/data_quality.csv     — coverage dates, missing months, splice info
+
+(A coverage/gap report is still printed to the console each run, but no longer
+saved as a CSV — nothing downstream consumed it.)
 
 Asset Universe:
     SPY   — US Large Cap (S&P 500)                 [from 1993]
@@ -372,18 +373,17 @@ def save_outputs(
     os.makedirs(RAW_DIR, exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+    # full_returns and dq_report are still computed (full_returns is needed to
+    # derive the aligned set, and the coverage report is printed to the console),
+    # but we no longer persist them — nothing consumes those CSVs.
     prices_raw.to_csv(f"{RAW_DIR}/prices_raw.csv")
-    full_returns.to_csv(f"{OUTPUT_DIR}/returns_full.csv")
     aligned_returns.to_csv(f"{OUTPUT_DIR}/returns_aligned.csv")
     summary_stats.to_csv(f"{OUTPUT_DIR}/summary_stats.csv")
-    dq_report.to_csv(f"{OUTPUT_DIR}/data_quality.csv")
 
     print(f"\n  Saved raw prices to {RAW_DIR}/prices_raw.csv")
     print(f"  Saved to {OUTPUT_DIR}/")
-    print(f"    returns_full.csv        — all returns, NaNs where no data yet")
     print(f"    returns_aligned.csv     — ★ use this for optimizer (no NaNs)")
     print(f"    summary_stats.csv       — annualized stats per asset")
-    print(f"    data_quality.csv        — coverage & gap report")
 
 
 # ─────────────────────────────────────────────

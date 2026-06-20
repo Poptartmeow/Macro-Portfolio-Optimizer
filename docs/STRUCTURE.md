@@ -48,7 +48,6 @@ Macro-Portfolio-Optimizer/
                                  ┌─────────────────────────┐  market_data/raw/prices_raw.csv
    yfinance (ETF prices) ──────► │ pipelines/data_pipeline  │ ─► market_data/processed/returns_aligned.csv ─┐
                                  └─────────────────────────┘  market_data/processed/summary_stats.csv      │
-                                                              market_data/processed/data_quality.csv       │
                                                                                                            │
    macro_data/raw/pmi/PMI_US_Man ──┐                       ──► macro_data/processed/pmi/PMI_Manufacturing_US.csv
    macro_data/raw/pmi/PMI_US_NonMan┼─► pipelines/pmi.py ───►   macro_data/processed/pmi/PMI_NonManufacturing_US.csv
@@ -77,9 +76,7 @@ bottom of `optimizer.py`. The PMI pipeline exists to feed that model.
 | File (under `data/`)                              | Produced by           | Description |
 |---------------------------------------------------|-----------------------|-------------|
 | `market_data/processed/returns_aligned.csv`       | data_pipeline         | ★ Main optimizer input: aligned monthly returns, no NaNs |
-| `market_data/processed/returns_full.csv`          | data_pipeline         | All returns incl. early NaNs |
-| `market_data/processed/summary_stats.csv`         | data_pipeline         | Annualized return / vol / Sharpe per asset |
-| `market_data/processed/data_quality.csv`          | data_pipeline         | Coverage, gaps, splice metadata |
+| `market_data/processed/summary_stats.csv`         | data_pipeline         | Annualized return / vol / Sharpe per asset (human-readable overview) |
 | `market_data/processed/benchmark_returns.csv`     | benchmark             | 60/40 ACWI/IGOV monthly returns |
 | `market_data/raw/prices_raw.csv`                  | data_pipeline         | Raw monthly adjusted-close prices |
 | `macro_data/processed/macro_monthly.csv`          | curate                | Cleaned, gap-filled monthly factor panel |
