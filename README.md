@@ -107,5 +107,3 @@ DIV_YIELD_USA             S&P 500 dividend yield proxy (FRED)
 
 - [docs/STRUCTURE.md](docs/STRUCTURE.md) — repository layout & data flow
 - [docs/PMI_Data_Documentation.md](docs/PMI_Data_Documentation.md) — what PMI is, sources, refresh procedure, composite weighting
-- [docs/architecture_diagram.html](docs/architecture_diagram.html) — database architecture diagram
-- [docs/schema_documentation.docx](docs/schema_documentation.docx) / [docs/schema_diagram.xlsx](docs/schema_diagram.xlsx) — schema reference
