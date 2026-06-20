@@ -32,7 +32,9 @@ from macro_portfolio.paths import MARKET_PROCESSED
 
 WEIGHTS = {"ACWI": 0.60, "IGOV": 0.40}  # global equity / intl govt bonds
 START_DATE = "2008-01-01"
-END_DATE = _dt.date.today().isoformat()
+# First day of the current month so the in-progress month is excluded (yfinance
+# `end` is exclusive) — keeps the benchmark aligned with the asset returns' last month-end.
+END_DATE = _dt.date.today().replace(day=1).isoformat()
 FREQUENCY = "ME"  # month-end
 
 

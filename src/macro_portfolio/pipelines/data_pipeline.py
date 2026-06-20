@@ -45,8 +45,11 @@ from macro_portfolio.paths import MARKET_RAW, MARKET_PROCESSED
 
 import datetime as _dt
 
-START_DATE  = "2007-01-01"   # earliest common start across the universe
-END_DATE    = _dt.date.today().isoformat()  # e.g. "2026-06-02" — yfinance needs a real date, not "today"
+START_DATE  = "2002-01-01"   # pull max available history; the common/aligned window is
+                             # still bounded by the latest ETF inception (EMB, Jan 2008)
+# End at the first day of the current month so the in-progress (incomplete) month is
+# excluded — yfinance's `end` is exclusive, so this yields data through last month-end.
+END_DATE    = _dt.date.today().replace(day=1).isoformat()
 FREQUENCY   = "ME"           # Month-end
 PERIODS     = 12             # Months per year
 RAW_DIR     = str(MARKET_RAW)        # raw price pulls
