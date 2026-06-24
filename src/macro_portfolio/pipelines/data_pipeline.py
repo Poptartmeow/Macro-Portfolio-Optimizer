@@ -20,14 +20,20 @@ Asset Universe:
     VXF   — US Mid + Small Cap                     [from 2001]
     EWC   — Canadian Equities                      [from 1996]
     EFA   — Intl Developed Equities (ex-US)        [from 2001]
-    VWO   — Emerging Market Equities               [from 2005]
-    AGG   — US Aggregate Bonds                     [from 2003]
-    EMB   — Emerging Market Bonds                  [from 2007]
-    DBC   — Broad Commodities                      [from 2006]
+    VWO   — Emerging Market Equities               [spliced back to 2002]
+    AGG   — US Aggregate Bonds                     [from 2003] ← binds aligned window
+    EMB   — Emerging Market Bonds                  [spliced back to 2002]
+    DBC   — Broad Commodities                      [spliced back to 2002]
 
-    Splice (International Bonds):
-    PFORX — PIMCO Intl Bond USD-Hedged (active fund) [2007–2013] ─┐ chain-linked
+    Splices (chain-linked proxy → primary, joined at the return level):
+    PFORX — PIMCO Intl Bond USD-Hedged (active fund) [2002–2013] ─┐
     BNDX  — Intl Aggregate ex-US USD-hedged (index)  [2013+]      ─┘ → INTL_BOND
+    PYEMX — PIMCO EM Bond (active fund)              [2002–2008] ─┐
+    EMB   — iShares EM USD Bond (index)             [2008+]       ─┘ → EMB
+    PCRIX — PIMCO CommodityRealReturn (active fund)  [2002–2006] ─┐
+    DBC   — Invesco DB Commodity Index              [2006+]       ─┘ → DBC
+    VEIEX — Vanguard EM Stock Index (mutual fund)    [2002–2005] ─┐
+    VWO   — Vanguard FTSE EM ETF                    [2005+]       ─┘ → VWO
 """
 
 import os
@@ -68,14 +74,41 @@ UNIVERSE = {
     "DBC":  "Broad Commodities",
 }
 
-# Splice config: PFORX (proxy) → BNDX (primary) = INTL_BOND
-SPLICE = {
-    "output_name": "INTL_BOND",
-    "label":       "Intl Bonds ex-US (spliced: PFORX→BNDX)",
-    "proxy":       "PFORX",    # used pre-splice-date
-    "primary":     "BNDX",   # used post-splice-date
-    "splice_date": "2013-04-01",  # BNDX inception (Apr 2013)
-}
+# Splice configs: each chain-links a longer-history proxy fund into a primary
+# ETF at the return level. `output_name` is the resulting series; when it equals
+# a UNIVERSE ticker (EMB/DBC/VWO) the spliced series replaces that column, when
+# it does not (INTL_BOND) it is added as a new column. `splice_date` is the first
+# month the primary's own returns are used; the proxy fills everything before.
+SPLICES = [
+    {
+        "output_name": "INTL_BOND",
+        "label":       "Intl Bonds ex-US (spliced: PFORX→BNDX)",
+        "proxy":       "PFORX",       # PIMCO Intl Bond USD-Hedged (active)
+        "primary":     "BNDX",        # Intl Aggregate ex-US USD-hedged (index)
+        "splice_date": "2013-04-01",  # BNDX inception (Apr 2013)
+    },
+    {
+        "output_name": "EMB",
+        "label":       "EM Bonds (spliced: PYEMX→EMB)",
+        "proxy":       "PYEMX",       # PIMCO Emerging Markets Bond (active)
+        "primary":     "EMB",         # iShares J.P. Morgan EM USD Bond
+        "splice_date": "2008-01-01",  # EMB inception (Dec 2007 → first return Jan 2008)
+    },
+    {
+        "output_name": "DBC",
+        "label":       "Broad Commodities (spliced: PCRIX→DBC)",
+        "proxy":       "PCRIX",       # PIMCO CommodityRealReturn (active)
+        "primary":     "DBC",         # Invesco DB Commodity Index
+        "splice_date": "2006-03-01",  # DBC inception (Feb 2006)
+    },
+    {
+        "output_name": "VWO",
+        "label":       "EM Equities (spliced: VEIEX→VWO)",
+        "proxy":       "VEIEX",       # Vanguard Emerging Markets Stock Index
+        "primary":     "VWO",         # Vanguard FTSE Emerging Markets ETF
+        "splice_date": "2005-04-01",  # VWO inception (Mar 2005)
+    },
+]
 
 
 # ─────────────────────────────────────────────
@@ -158,25 +191,24 @@ def fetch_prices(tickers: list, start: str, end: str, max_retries: int = 4) -> p
 # STEP 2 — BUILD PFORX→BNDX SPLICE
 # ─────────────────────────────────────────────
 
-def build_splice(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, dict]:
+def build_splice(prices: pd.DataFrame, splice: dict) -> tuple[pd.Series, dict]:
     """
-    Chain-links PFORX and BNDX into a single INTL_BOND return series.
+    Chain-links a proxy fund and a primary ETF into a single return series.
 
     Method:
       - Compute monthly returns on each series independently
-      - Use PFORX (proxy) returns before splice_date, BNDX on/after
+      - Use the proxy's returns before splice_date, the primary's on/after
       - Concatenate at the return level (NOT price level)
         → avoids artificial jump at the join date
 
     Returns:
-      prices_out   : original prices with PFORX/BNDX columns kept for audit
-      spliced_ret  : the chain-linked INTL_BOND return series
+      spliced_ret  : the chain-linked return series (named splice["output_name"])
       splice_info  : dict with metadata for the data quality report
     """
-    proxy       = SPLICE["proxy"]
-    primary     = SPLICE["primary"]
-    splice_dt   = pd.Timestamp(SPLICE["splice_date"])
-    out_name    = SPLICE["output_name"]
+    proxy       = splice["proxy"]
+    primary     = splice["primary"]
+    splice_dt   = pd.Timestamp(splice["splice_date"])
+    out_name    = splice["output_name"]
 
     if proxy not in prices.columns or primary not in prices.columns:
         raise ValueError(
@@ -203,6 +235,7 @@ def build_splice(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, dict]:
     common_ol       = proxy_overlap.index.intersection(primary_overlap.index)
 
     splice_info = {
+        "output_name":       out_name,
         "proxy":             proxy,
         "primary":           primary,
         "splice_date":       splice_dt.date(),
@@ -213,9 +246,8 @@ def build_splice(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, dict]:
         "primary_months_used": len(post.dropna()),
         "overlap_corr":      float(proxy_overlap.loc[common_ol].corr(primary_overlap.loc[common_ol]))
                              if len(common_ol) > 2 else None,
-        "note": "PFORX is an actively-managed USD-hedged fund; BNDX is a passive "
-                "USD-hedged index. Both are USD-hedged (no FX mismatch at the join), "
-                "but the active/passive switch should be flagged in the methodology note."
+        "note": f"{proxy} (active fund) chain-linked into {primary} (passive index) "
+                f"at {splice_dt.date()}; active/passive switch flagged in methodology."
     }
 
     print(f"\n  Splice: {proxy} → {primary} @ {splice_dt.date()}")
@@ -225,25 +257,30 @@ def build_splice(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, dict]:
         print(f"    Overlap correlation (QA): {splice_info['overlap_corr']:.3f}")
     print(f"    ⚠  {splice_info['note']}")
 
-    return prices, spliced, splice_info
+    return spliced, splice_info
 
 
 # ─────────────────────────────────────────────
 # STEP 3 — COMPUTE RETURNS
 # ─────────────────────────────────────────────
 
-def compute_returns(prices: pd.DataFrame, spliced_ret: pd.Series) -> pd.DataFrame:
+def compute_returns(prices: pd.DataFrame, spliced_rets: list[pd.Series]) -> pd.DataFrame:
     """
-    Compute monthly returns for all core assets.
-    Replaces PFORX/BNDX raw columns with the spliced INTL_BOND series.
+    Compute monthly returns for all core assets, then apply each spliced series.
+
+    For a splice whose output_name matches a UNIVERSE ticker (EMB/DBC/VWO) the
+    spliced series replaces that column; otherwise (INTL_BOND) it is added as a
+    new column. Proxy-only legs (PFORX, PYEMX, PCRIX, VEIEX) never appear here —
+    they live in prices_raw for audit but are folded into their spliced output.
     """
     core_tickers = list(UNIVERSE.keys())
 
-    # Returns on core universe (excludes splice legs)
+    # Returns on core universe (excludes proxy legs, which aren't in UNIVERSE)
     rets = prices[core_tickers].pct_change()
 
-    # Add spliced bond series
-    rets[spliced_ret.name] = spliced_ret
+    # Apply each spliced series (replaces or adds its column)
+    for s in spliced_rets:
+        rets[s.name] = s
 
     return rets
 
@@ -285,7 +322,7 @@ def compute_summary_stats(returns: pd.DataFrame) -> pd.DataFrame:
     ann_vol = returns.std()  * np.sqrt(PERIODS)
     sharpe  = ann_ret / ann_vol
 
-    labels = {**UNIVERSE, SPLICE["output_name"]: SPLICE["label"]}
+    labels = {**UNIVERSE, **{s["output_name"]: s["label"] for s in SPLICES}}
 
     stats = pd.DataFrame({
         "Label":        [labels.get(c, c) for c in returns.columns],
@@ -307,7 +344,7 @@ def compute_summary_stats(returns: pd.DataFrame) -> pd.DataFrame:
 def data_quality_report(
     prices:       pd.DataFrame,
     full_returns: pd.DataFrame,
-    splice_info:  dict,
+    splice_infos: list[dict],
 ) -> pd.DataFrame:
     """
     Checks each series for:
@@ -344,18 +381,18 @@ def data_quality_report(
 
     dq = pd.DataFrame(rows).set_index("Asset")
 
-    # Append splice metadata as a note row
-    note = pd.DataFrame([{
-        "Asset":          "SPLICE NOTE",
-        "First Month":    splice_info["proxy_start"],
-        "Last Month":     splice_info["primary_start"],
-        "Total Months":   splice_info["spliced_months"],
+    # Append one splice metadata note row per splice
+    notes = pd.DataFrame([{
+        "Asset":          f"SPLICE: {si['output_name']}",
+        "First Month":    si["proxy_start"],
+        "Last Month":     si["primary_start"],
+        "Total Months":   si["spliced_months"],
         "Missing Months": 0,
         "Interior Gaps":  0,
-        "OK":             splice_info["note"],
-    }]).set_index("Asset")
+        "OK":             si["note"],
+    } for si in splice_infos]).set_index("Asset")
 
-    dq = pd.concat([dq, note])
+    dq = pd.concat([dq, notes])
     return dq
 
 
@@ -398,20 +435,27 @@ def run_pipeline():
     print(f"  {START_DATE}  →  {END_DATE}  |  Monthly frequency")
     print(sep)
 
-    # All tickers to fetch = core universe + both splice legs
-    all_tickers = list(UNIVERSE.keys()) + [SPLICE["proxy"], SPLICE["primary"]]
+    # All tickers to fetch = core universe + every splice leg (proxy + primary).
+    # dict.fromkeys de-dupes while preserving order (primaries like EMB/DBC/VWO
+    # are already in UNIVERSE).
+    splice_legs = [t for s in SPLICES for t in (s["proxy"], s["primary"])]
+    all_tickers = list(dict.fromkeys(list(UNIVERSE.keys()) + splice_legs))
 
     # 1. Fetch
     print("\n[1/6] Fetching prices from yfinance...")
     prices = fetch_prices(all_tickers, START_DATE, END_DATE)
 
     # 2. Splice
-    print("\n[2/6] Building PFORX → BNDX splice...")
-    prices, spliced_ret, splice_info = build_splice(prices)
+    print(f"\n[2/6] Building {len(SPLICES)} splices...")
+    spliced_rets, splice_infos = [], []
+    for s in SPLICES:
+        spliced_ret, splice_info = build_splice(prices, s)
+        spliced_rets.append(spliced_ret)
+        splice_infos.append(splice_info)
 
     # 3. Returns
     print("\n[3/6] Computing monthly returns...")
-    full_rets = compute_returns(prices, spliced_ret)
+    full_rets = compute_returns(prices, spliced_rets)
 
     # 4. Trim & align
     print("\n[4/6] Trimming to aligned window...")
@@ -428,7 +472,7 @@ def run_pipeline():
 
     # 6. Data quality
     print("\n[6/6] Running data quality checks...")
-    dq = data_quality_report(prices, full_rets, splice_info)
+    dq = data_quality_report(prices, full_rets, splice_infos)
     print(dq[["First Month","Last Month","Total Months","Interior Gaps","OK"]].to_string())
 
     # Save
