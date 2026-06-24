@@ -28,12 +28,50 @@ from macro_portfolio.risk.covariance import (                  # noqa: E402
 st.markdown("# Optimizer")
 st.markdown(theme.flow_diagram(active="Optimizer"), unsafe_allow_html=True)
 st.caption("Tune a single optimizer and see how the box constraints flatten the "
-           "expected-return signal. Expected returns = historical mean (macro model "
-           "swaps in next). To compare all methods at once, see **Ensemble**.")
+           "expected-return signal. Expected returns can be the historical mean or "
+           "a live macro-regression model (toggle below). To compare all methods at "
+           "once, see **Ensemble**.")
 
 EQUITY = ["SPY", "VXF", "EWC", "EFA", "VWO"]
 rets = da.load_returns()
-mu = rets.mean() * 12
+
+# ── Expected returns: historical mean vs macro-regression model ──
+er_detail = None
+with st.expander("Expected returns — historical mean vs macro-regression model",
+                 expanded=False):
+    er_mode = st.radio(
+        "Source of expected returns (μ) fed to the optimizer",
+        ["Historical mean", "Macro regression model"],
+        horizontal=True,
+        help="The macro model fits each asset's return on the selected macro "
+             "factors and evaluates the fit at the latest factor values, so a "
+             "current macro view drives μ instead of the long-run average.")
+    if er_mode.startswith("Macro"):
+        ec1, ec2, ec3 = st.columns([3, 1, 1])
+        all_factors = list(da.load_factors().columns)
+        defaults = [f for f in da.DEFAULT_ER_FACTORS if f in all_factors]
+        chosen = ec1.multiselect(
+            "Macro factors (regressors)", all_factors, default=defaults,
+            format_func=da.factor_label)
+        er_lag = ec2.slider("Factor lag (months)", 0, 6, 1)
+        er_transform = ec3.selectbox("Transform", ["level", "change"])
+        use_split = st.checkbox(
+            "Train/test split — fit only through cutoff (reserve recent data)",
+            value=True,
+            help="Per the professor's scheme: fit the regression on data up to the "
+                 "cutoff and hold out everything after it as out-of-sample.")
+        train_end = None
+        if use_split:
+            train_end = st.text_input("Train cutoff (fit ≤ this month)", "2020-12-31")
+
+if er_mode.startswith("Macro") and chosen:
+    mu, er_detail = da.regression_expected_returns(
+        tuple(chosen), lag=er_lag, transform=er_transform, train_end=train_end)
+    mu = mu.reindex(rets.columns)
+else:
+    if er_mode.startswith("Macro"):
+        st.warning("Select at least one macro factor — using historical mean for now.")
+    mu = rets.mean() * 12
 
 # ── Controls ──
 c1, c2, c3 = st.columns(3)
@@ -94,6 +132,21 @@ k[5].markdown(theme.kpi("Cov condition #", f"{cond:,.0f}"), unsafe_allow_html=Tr
 st.caption(f"Covariance: {cov_note}. 'Assets at bound' near 9 = corner solution "
            "(box dominates). 'Effective N' is how many assets effectively carry "
            "weight (higher = more diversified). Condition # lower = more stable.")
+
+if er_detail is not None:
+    with st.expander("Macro-model expected returns (μ fed to the optimizer)",
+                     expanded=False):
+        tbl = er_detail.copy()
+        tbl.insert(0, "Asset", [da.asset_label(i) for i in tbl.index])
+        tbl.insert(2, "Exp. Return (ann)", mu.reindex(tbl.index))
+        st.dataframe(
+            tbl.style.format({"Exp. Return (ann)": "{:.2%}", "R²": "{:.2f}",
+                              "n": "{:.0f}"}),
+            width='stretch')
+        n_fallback = int((er_detail["Source"] == "historical (fallback)").sum())
+        if n_fallback:
+            st.caption(f"{n_fallback} asset(s) fell back to historical mean "
+                       "(regression couldn't be fit on the chosen factors).")
 
 st.write("")
 left, right = st.columns([3, 2])
@@ -179,4 +232,82 @@ else:
             f"{cum.index.min().year}–{cum.index.max().year} overlap.</span></div>",
             unsafe_allow_html=True)
     st.caption("Current weights applied across history vs the passive 60/40. "
-               "A proper train/test backtest is the next build.")
+               "For the proper walk-forward backtest, see below.")
+
+# ── Walk-forward monthly rolling re-optimization ──
+st.write("")
+st.subheader("Walk-forward backtest — monthly rolling re-optimization")
+st.caption("The professor's scheme: each out-of-sample month we re-fit the macro "
+           "regressions on all prior data, build μ from the lagged factors, "
+           "re-optimize, and trade the difference in weights. Uses the objective, "
+           "covariance, and weight box selected above.")
+
+# Factor config falls back to the defaults when the page is in historical-mean mode.
+_bt_factors = tuple(chosen) if (er_mode.startswith("Macro") and chosen) \
+    else tuple(f for f in da.DEFAULT_ER_FACTORS if f in da.load_factors().columns)
+_bt_lag = er_lag if er_mode.startswith("Macro") else 1
+_bt_transform = er_transform if er_mode.startswith("Macro") else "level"
+_bt_cut = train_end if (er_mode.startswith("Macro") and train_end) else "2020-12-31"
+
+bc1, bc2 = st.columns([2, 1])
+bt_cut = bc1.text_input("Out-of-sample starts after (train cutoff)", _bt_cut,
+                        key="bt_cut")
+run_bt = bc2.button("Run walk-forward backtest", type="primary")
+
+if run_bt:
+    bt = da.rolling_backtest(
+        _bt_factors, _bt_lag, _bt_transform, bt_cut,
+        objective, cov_choice, min_w, max_w, target_vol, l2, eq_cap,
+        tuple(EQUITY))
+    if bt.get("empty", True):
+        st.warning("Backtest produced no months — try an earlier cutoff or fewer factors.")
+    else:
+        m = st.columns(4)
+        s = bt["summary"]
+        m[0].markdown(theme.kpi("OOS window",
+                      f"{bt['oos_start'].year}–{bt['oos_end'].year}"),
+                      unsafe_allow_html=True)
+        m[1].markdown(theme.kpi("Strategy Sharpe", f"{s.loc['Strategy','Sharpe']:.2f}"),
+                      unsafe_allow_html=True)
+        m[2].markdown(theme.kpi("Strategy ann. return",
+                      f"{s.loc['Strategy','Ann. Return']*100:.2f}", "%"),
+                      unsafe_allow_html=True)
+        m[3].markdown(theme.kpi("Avg monthly turnover",
+                      f"{bt['avg_turnover']*100:.1f}", "%"), unsafe_allow_html=True)
+
+        bl2, br2 = st.columns([3, 2])
+        with bl2:
+            cum = (1 + bt["perf"]).cumprod()
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=cum.index, y=cum["Strategy"], name="Strategy",
+                                     line=dict(color=theme.ROTUNDA_ORANGE, width=3)))
+            if "Benchmark 60/40" in cum.columns:
+                fig.add_trace(go.Scatter(
+                    x=cum.index, y=cum["Benchmark 60/40"], name="Benchmark 60/40",
+                    line=dict(color=theme.CYAN, width=2.5, dash="dot")))
+            fig.update_layout(yaxis_title="Growth of $1 (out-of-sample)",
+                              hovermode="x unified")
+            st.plotly_chart(theme.style_fig(fig, height=360), width='stretch')
+        with br2:
+            st.markdown("**Out-of-sample performance**")
+            st.dataframe(
+                s.style.format({"Ann. Return": "{:.2%}", "Ann. Vol": "{:.2%}",
+                                "Sharpe": "{:.2f}"}), width='stretch')
+            st.markdown("**Latest rebalance — trades (Δw)**")
+            tr = bt["trades"].copy()
+            tr.index = [da.asset_label(i) for i in tr.index]
+            st.dataframe(
+                tr.style.format("{:.1%}").background_gradient(
+                    subset=["Trade (Δw)"], cmap="RdYlGn"),
+                width='stretch')
+
+        st.subheader("Weights through time")
+        wfig = go.Figure()
+        for col in bt["weights"].columns:
+            wfig.add_trace(go.Scatter(
+                x=bt["weights"].index, y=bt["weights"][col] * 100,
+                name=da.asset_label(col), stackgroup="one", mode="lines"))
+        wfig.update_layout(yaxis_title="Weight (%)", hovermode="x unified")
+        st.plotly_chart(theme.style_fig(wfig, height=360), width='stretch')
+        st.caption("Each month's allocation. The month-to-month change in these "
+                   "lines is exactly what the strategy trades.")

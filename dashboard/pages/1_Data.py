@@ -24,7 +24,7 @@ st.markdown("Everything here is public and free, pulled and cleaned by our Pytho
             "pipeline, with nothing proprietary.")
 
 k = st.columns(3)
-k[0].markdown(theme.kpi("Aligned window", "2008–2026"), unsafe_allow_html=True)
+k[0].markdown(theme.kpi("Aligned window", da.window_label()), unsafe_allow_html=True)
 k[1].markdown(theme.kpi("Months", str(len(rets))), unsafe_allow_html=True)
 k[2].markdown(theme.kpi("Assets", str(rets.shape[1])), unsafe_allow_html=True)
 st.write("")
@@ -59,9 +59,12 @@ with tab_assets:
         "(SPY, VXF), international developed, emerging-market, and Canadian equity "
         "(EFA, VWO, EWC), US aggregate, international, and emerging-market bonds "
         "(AGG, INTL_BOND, EMB), and broad commodities (DBC), as monthly total "
-        "returns from 2008 to 2026. International bonds are a chain-linked splice "
-        "(PFORX → BNDX) so the series reaches back before BNDX existed, and we also "
-        "pull the 60/40 ACWI/IGOV benchmark for comparison.")
+        f"returns from {da.window_label().replace('–', ' to ')}. Several series are "
+        "chain-linked splices — international bonds (PFORX → BNDX), EM bonds "
+        "(PYEMX → EMB), commodities (PCRIX → DBC), and EM equities (VEIEX → VWO) — "
+        "so each reaches back to ~2002, before its ETF existed. The aligned window "
+        "is now bound by US aggregate bonds (AGG, Oct 2003). We also pull the 60/40 "
+        "ACWI/IGOV benchmark for comparison.")
 
     uni = da.summary_stats().copy()
     uni.insert(0, "Asset", [da.ASSET_LABELS.get(i, i) for i in uni.index])
@@ -83,11 +86,12 @@ with tab_factors:
         "A US panel sourced from FRED and OECD: headline and core CPI, the policy "
         "rate and short-term rates, the 2-year and 10-year Treasury yields and the "
         "term/credit spreads, the dividend yield, and investment-grade and high-yield "
-        "credit spreads, plus a composite ISM PMI. The usable window starts in "
-        "January 2008 because emerging-market bonds (EMB) only launched as an ETF in "
-        "late 2007; it's the latest-starting series, so it bounds the common, gap-free "
-        "window. Splicing it to a pre 2008 proxy would reclaim roughly a year and the "
-        "onset of the financial crisis.")
+        "credit spreads, plus a composite ISM PMI. The usable window now starts in "
+        "October 2003: emerging-market bonds, commodities, and EM equities have all "
+        "been spliced to pre-ETF proxy funds (PYEMX, PCRIX, VEIEX) that reach back to "
+        "2002, so US aggregate bonds (AGG, Oct 2003) are now the latest-starting "
+        "series and bound the common, gap-free window. The earlier start captures the "
+        "full 2008 financial crisis.")
 
     st.subheader("Macro Panel")
     st.markdown(
