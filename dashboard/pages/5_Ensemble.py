@@ -83,6 +83,27 @@ if bench is not None:
                "Effective N = how many assets effectively carry weight (higher = "
                "more diversified). Concentration rises as Sharpe is maximized.")
 
+with st.expander("📖 What these methods are (plain English)"):
+    st.markdown(
+        "**The two Greg asked us to look at — they need *no* return forecasts:**\n\n"
+        "- **Inverse Volatility** — weight each asset by **1 ÷ its volatility**. "
+        "Calm assets (bonds) get more; jumpy ones (stocks, commodities) get less. "
+        "Simple, hard to break, ignores any view on returns.\n"
+        "- **Inverse Variance** — same idea but **1 ÷ volatility²**. It tilts *even "
+        "harder* toward the calmest assets, so it piles into bonds and runs at very "
+        "low risk.\n\n"
+        "**Why they matter:** they're the **baseline**. Because they use no "
+        "expected-return model, they're the yardstick — our forecast-driven "
+        "optimizer (Max Sharpe, fed by the macro regression) has to **beat these** "
+        "to justify the extra complexity.\n\n"
+        "**The rest, in one line each:**\n\n"
+        "- *Equal Weight* — same amount in everything (simplest possible).\n"
+        "- *Max Sharpe* — the only one that uses **return forecasts**; chases the "
+        "best risk-adjusted return.\n"
+        "- *Min Variance / Risk Parity / HRP / Max Diversification* — different ways "
+        "to **shape risk** (lowest risk, equal risk per asset, cluster-aware, most "
+        "diversified) without forecasting returns.")
+
 # ── 2. Weights heatmap (all methods at once) ──
 st.subheader("Allocations across methods")
 Wdf = pd.DataFrame({n: w for n, w in ports.items()})
