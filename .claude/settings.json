@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python3 -m py_compile src/macro_portfolio/research/curate.py dashboard/data_access.py dashboard/pages/1_Data.py)",
-      "Bash(python3 -c ' *)"
-    ]
-  }
-}
