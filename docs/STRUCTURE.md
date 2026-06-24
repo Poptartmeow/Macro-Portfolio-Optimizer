@@ -13,19 +13,35 @@ Macro-Portfolio-Optimizer/
 ├── pyproject.toml             Package metadata + dependencies (pip install -e .)
 ├── requirements.txt           Dependency list (pip install -r ...)
 │
-├── src/macro_portfolio/       The Python package (all source code lives here)
+├── src/macro_portfolio/       The Python package — ALL computing logic lives here
 │   ├── paths.py               Resolves repo-root-relative paths for every script
+│   ├── data.py               Pure CSV loaders (returns, factors, benchmark, fill log)
 │   │
 │   ├── pipelines/             ── Stage 1: data acquisition & cleaning ──
 │   │   ├── data_pipeline.py           ETF prices -> monthly returns (the main input)
-│   │   └── pmi.py                      ISM Manufacturing + Non-Manufacturing -> Man / NonMan / Composite PMI
+│   │   ├── pmi.py                      ISM Man + Non-Man -> Man / NonMan / Composite PMI
+│   │   └── benchmark.py               60/40 ACWI/IGOV benchmark returns
 │   │
-│   ├── optimizer/             ── Stage 2: portfolio construction ──
+│   ├── research/             ── Stage 2: curation, regressions, backtest ──
+│   │   ├── curate.py                  Build the cleaned macro factor panel + derived factors
+│   │   ├── regime.py                  Growth×inflation regime / quadrant labels
+│   │   ├── regression.py             Univariate sweep: asset_ret ~ factor(t-lag)
+│   │   ├── expected_returns.py       Macro-regression μ for the optimizer (+ train cutoff)
+│   │   └── backtest.py               Walk-forward rolling re-optimization
+│   │
+│   ├── optimizer/             ── Stage 3: portfolio construction ──
 │   │   ├── optimizer.py               Mean-variance optimizer at a target volatility
+│   │   ├── methods.py                8-method library + ensemble (incl. inverse vol/var)
+│   │   ├── advanced.py               Max-Sharpe with L2 + group bounds
+│   │   ├── ips.py                    Investment Policy Statement constraints/compliance
 │   │   └── plot_frontier.py           Efficient-frontier chart (constrained vs unconstrained)
 │   │
-│   └── analysis/              ── Stage 3: supporting research ──
-│       └── intl_bond_splice.py        Bond-splice proxy study (why PFORX, not BWX)
+│   ├── risk/                  covariance.py — sample + Ledoit-Wolf shrinkage
+│   └── analysis/             intl_bond_splice.py — bond-splice proxy study
+│
+├── dashboard/                 Streamlit UI — THIN: imports from src, only loads + draws
+│   ├── data_access.py        Cached wrappers over macro_portfolio.* (no logic here)
+│   └── pages/                Each page = one view (Data, Macro, Optimizer, Ensemble, …)
 │
 ├── data/                      Split by domain; each domain has raw inputs vs processed outputs
 │   ├── macro_data/
